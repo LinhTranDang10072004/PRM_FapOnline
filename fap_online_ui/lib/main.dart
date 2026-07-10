@@ -1,67 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'services/auth_service.dart';
+import 'config/app_routes.dart';
+import 'config/constants.dart';
+import 'provider/auth_provider.dart';
+import 'provider/dashboard_provider.dart';
+import 'provider/parent_child_provider.dart';
+import 'theme/app_theme.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FapOnlineApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider(create: (_) => ParentChildProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class FapOnlineApp extends StatelessWidget {
-  const FapOnlineApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FAP Online',
+      title: Constants.appName,
+      theme: AppTheme.lightTheme,
+      initialRoute: AppRoutes.start,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
-        ),
-      ),
-      home: const AuthGate(),
-    );
-  }
-}
-
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
-
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  final _authService = AuthService();
-  late Future<bool> _sessionFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _sessionFuture = _authService.isLoggedIn();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _sessionFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.data == true) {
-          return const HomeScreen();
-        }
-        return const LoginScreen();
-      },
     );
   }
 }
