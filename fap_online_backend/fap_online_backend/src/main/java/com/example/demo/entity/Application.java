@@ -22,7 +22,7 @@ public class Application {
     @Column(name = "Title", nullable = false, length = 200)
     private String title;
 
-    @Column(name = "Content", nullable = false)
+    @Column(name = "Content", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
     @Column(name = "RelatedScheduleId")

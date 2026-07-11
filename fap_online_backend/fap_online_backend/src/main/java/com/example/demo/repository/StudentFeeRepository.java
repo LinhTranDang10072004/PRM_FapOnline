@@ -12,4 +12,26 @@ import java.util.List;
 public interface StudentFeeRepository extends JpaRepository<StudentFee, Integer> {
     @Query("SELECT sf FROM StudentFee sf WHERE sf.studentId IN :studentIds AND sf.status = 'UNPAID'")
     List<StudentFee> findUnpaidFeesForStudents(@Param("studentIds") List<Integer> studentIds);
+    
+    @Query("SELECT sf FROM StudentFee sf " +
+           "WHERE sf.studentId = :studentId " +
+           "AND sf.semesterId = :semesterId")
+    List<StudentFee> findByStudentAndSemester(
+        @Param("studentId") Integer studentId,
+        @Param("semesterId") Integer semesterId
+    );
+    
+    @Query("SELECT sf FROM StudentFee sf " +
+           "WHERE sf.studentId = :studentId " +
+           "AND sf.dueDate < CURRENT_DATE " +
+           "AND sf.status = 'UNPAID'")
+    List<StudentFee> findOverdueFees(
+        @Param("studentId") Integer studentId
+    );
+    
+    @Query("SELECT sf FROM StudentFee sf " +
+           "WHERE sf.studentId = :studentId")
+    List<StudentFee> findByStudentId(
+        @Param("studentId") Integer studentId
+    );
 }

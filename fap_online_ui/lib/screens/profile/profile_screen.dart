@@ -1,15 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../provider/profile_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_card.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
+import '../../config/api_endpoints.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isInit = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInit) {
+      _isInit = true;
+      context.read<ProfileProvider>().fetchProfile();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final profileProvider = context.watch<ProfileProvider>();
+    final profile = profileProvider.profile;
+
+    if (profileProvider.isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final String fullName = profile?.fullName ?? 'Khách';
+    final String email = profile?.email ?? 'Chưa cập nhật';
+    final String phone = profile?.phone ?? 'Chưa cập nhật';
+    final String? avatarUrl = profile?.avatarUrl;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -33,14 +67,15 @@ class ProfileScreen extends StatelessWidget {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.white,
-                    child: const Icon(Icons.person, size: 40, color: AppColors.primary),
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(ApiEndpoints.getImageUrl(avatarUrl)) : null,
+                    child: avatarUrl == null || avatarUrl.isEmpty ? const Icon(Icons.person, size: 40, color: AppColors.primary) : null,
                   ),
                   const SizedBox(height: 12),
-                  const Text('Nguyễn Văn A', style: AppTextStyles.h2),
+                  Text(fullName, style: AppTextStyles.h2),
                   const SizedBox(height: 4),
-                  Text('nguyenvana@gmail.com', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                  Text(email, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text('0912345678', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                  Text(phone, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -63,11 +98,14 @@ class ProfileScreen extends StatelessWidget {
                     leading: const Icon(Icons.edit_outlined, color: AppColors.textPrimary),
                     title: const Text('Chỉnh sửa thông tin', style: AppTextStyles.bodyMedium),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const EditProfileScreen()),
                       );
+                      if (mounted && result == true) {
+                        context.read<ProfileProvider>().fetchProfile();
+                      }
                     },
                   ),
                   const Divider(indent: 56, height: 1, color: AppColors.divider),

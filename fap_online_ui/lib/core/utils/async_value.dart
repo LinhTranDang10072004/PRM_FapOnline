@@ -1,9 +1,9 @@
 abstract class AsyncValue<T> {
   const AsyncValue();
 
-  factory AsyncValue.data(T value) = AsyncData<T>;
-  factory AsyncValue.loading() = AsyncLoading<T>;
-  factory AsyncValue.error(Object error, [StackTrace? stackTrace]) = AsyncError<T>;
+  const factory AsyncValue.data(T value) = AsyncData<T>;
+  const factory AsyncValue.loading() = AsyncLoading<T>;
+  const factory AsyncValue.error(Object error, [StackTrace? stackTrace]) = AsyncError<T>;
 
   R when<R>({
     required R Function(T data) data,

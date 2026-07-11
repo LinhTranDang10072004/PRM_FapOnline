@@ -1,6 +1,6 @@
-import '../config/api_endpoints.dart';
-import '../models/parent_models.dart';
-import 'api_service.dart';
+import 'package:fap_online_ui/config/api_endpoints.dart';
+import 'package:fap_online_ui/features/parent/data/models/parent_models.dart';
+import 'package:fap_online_ui/services/api_service.dart';
 
 class ParentRepository {
   final ApiService _apiService;

@@ -41,7 +41,8 @@ public class ParentProfileServiceImpl implements ParentProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
                 
-        // Only update allowed fields
+        // Update allowed fields including fullName
+        if (profileDTO.getFullName() != null) user.setFullName(profileDTO.getFullName());
         if (profileDTO.getPhone() != null) user.setPhone(profileDTO.getPhone());
         if (profileDTO.getAddress() != null) user.setAddress(profileDTO.getAddress());
         if (profileDTO.getAvatarUrl() != null) user.setAvatarUrl(profileDTO.getAvatarUrl());

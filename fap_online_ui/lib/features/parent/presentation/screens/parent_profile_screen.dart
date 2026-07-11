@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/parent_models.dart';
-import '../../provider/auth_provider.dart';
-import '../../provider/parent_profile_provider.dart';
-import '../../utils/display_utils.dart';
-import '../../config/app_routes.dart';
+import 'package:fap_online_ui/features/parent/data/models/parent_models.dart';
+import 'package:fap_online_ui/provider/auth_provider.dart';
+import '../providers/parent_profile_provider.dart';
+import 'package:fap_online_ui/utils/display_utils.dart';
+import 'package:fap_online_ui/config/app_routes.dart';
 
 class ParentProfileScreen extends StatefulWidget {
   const ParentProfileScreen({super.key});

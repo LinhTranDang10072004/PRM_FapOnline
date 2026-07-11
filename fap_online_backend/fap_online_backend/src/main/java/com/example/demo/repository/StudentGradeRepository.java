@@ -13,4 +13,23 @@ import java.util.List;
 public interface StudentGradeRepository extends JpaRepository<StudentGrade, Integer> {
     @Query("SELECT sg FROM StudentGrade sg WHERE sg.studentId IN :studentIds AND sg.status = 'PUBLISHED' ORDER BY sg.enteredAt DESC")
     List<StudentGrade> findRecentGradesForStudents(@Param("studentIds") List<Integer> studentIds, Pageable pageable);
+    
+    @Query("SELECT sg FROM StudentGrade sg, SchoolClass sc " +
+           "WHERE sg.classId = sc.classId " +
+           "AND sg.studentId = :studentId " +
+           "AND sc.semesterId = :semesterId " +
+           "AND sg.status = 'PUBLISHED' " +
+           "ORDER BY sg.enteredAt DESC")
+    List<StudentGrade> findBySemester(
+        @Param("studentId") Integer studentId,
+        @Param("semesterId") Integer semesterId
+    );
+    
+    @Query("SELECT sg FROM StudentGrade sg " +
+           "WHERE sg.studentId = :studentId " +
+           "AND sg.status = 'PUBLISHED' " +
+           "ORDER BY sg.enteredAt DESC")
+    List<StudentGrade> findPublishedGradesByStudent(
+        @Param("studentId") Integer studentId
+    );
 }
