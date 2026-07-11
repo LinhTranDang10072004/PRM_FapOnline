@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/async_value.dart';
 import '../../data/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
-import '../../../../core/utils/preferences.dart';
+import 'package:fap_online_ui/utils/preferences.dart';
 
 class ParentDashboardProvider extends ChangeNotifier {
   final ParentRepository _repository;
@@ -13,6 +13,10 @@ class ParentDashboardProvider extends ChangeNotifier {
 
   AsyncValue<ParentDashboardData> _dashboardState = const AsyncValue.loading();
   AsyncValue<ParentDashboardData> get dashboardState => _dashboardState;
+
+  bool get isLoading => _dashboardState is AsyncLoading;
+  String? get error => _dashboardState is AsyncError ? (_dashboardState as AsyncError).error.toString() : null;
+  ParentDashboardData? get dashboard => _dashboardState is AsyncData<ParentDashboardData> ? (_dashboardState as AsyncData<ParentDashboardData>).value : null;
 
   String? _displayName;
   String? get displayName => _displayName;

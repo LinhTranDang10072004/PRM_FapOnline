@@ -6,6 +6,10 @@ import 'config/constants.dart';
 import 'provider/auth_provider.dart';
 import 'provider/dashboard_provider.dart';
 import 'provider/parent_child_provider.dart';
+import 'provider/profile_provider.dart';
+import 'provider/attendance_provider.dart';
+import 'provider/transcript_provider.dart';
+import 'provider/student_fee_provider.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -15,6 +19,10 @@ void main() {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => ParentChildProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+        ChangeNotifierProvider(create: (_) => TranscriptProvider()),
+        ChangeNotifierProvider(create: (_) => StudentFeeProvider()),
       ],
       child: const MyApp(),
     ),

@@ -38,8 +38,9 @@ public class ParentChildController {
     @Operation(summary = "Get child timetable", description = "Returns the weekly timetable for a specific child")
     public ResponseEntity<List<WeeklyTimetableDTO>> getChildTimetable(
             @Parameter(description = "ID of the student") @PathVariable Integer studentId,
-            @Parameter(description = "Week date in YYYY-MM-DD format") @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate week) {
-        return ResponseEntity.ok(parentChildService.getChildTimetable(studentId, week));
+            @Parameter(description = "Start date in YYYY-MM-DD format") @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @Parameter(description = "End date in YYYY-MM-DD format") @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
+        return ResponseEntity.ok(parentChildService.getChildTimetable(studentId, startDate, endDate));
     }
 
     @GetMapping("/{studentId}/attendance")

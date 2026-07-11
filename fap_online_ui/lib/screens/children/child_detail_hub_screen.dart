@@ -1,24 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../provider/parent_child_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_shadows.dart';
 import '../../widgets/app_card.dart';
+import '../../config/api_endpoints.dart';
+import '../grades/transcript_screen.dart';
+import '../attendance/attendance_screen.dart';
+import '../fee/fee_screen.dart';
+import '../timetable/timetable_screen.dart';
 
-class ChildDetailHubScreen extends StatelessWidget {
+class ChildDetailHubScreen extends StatefulWidget {
   final int studentId;
 
   const ChildDetailHubScreen({super.key, required this.studentId});
 
   @override
+  State<ChildDetailHubScreen> createState() => _ChildDetailHubScreenState();
+}
+
+class _ChildDetailHubScreenState extends State<ChildDetailHubScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Select this child when opening the detail screen
+    context.read<ParentChildProvider>().selectChild(widget.studentId);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Mock data for student info
-    final String fullName = studentId == 1 ? 'Nguyễn Văn B' : 'Nguyễn Thị C';
-    final String studentCode = studentId == 1 ? 'SE171234' : 'SE171567';
+    final provider = context.watch<ParentChildProvider>();
+    
+    // Find the student or return first if not found
+    final student = provider.children.isNotEmpty
+        ? provider.children.firstWhere(
+            (c) => c.studentId == widget.studentId,
+            orElse: () => provider.children.first,
+          )
+        : null;
+
+    if (student == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Chi tiết sinh viên'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: const Center(child: Text('Không tìm thấy thông tin')),
+      );
+    }
     
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(fullName),
+        title: Text(student.fullName),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -34,22 +71,27 @@ class ChildDetailHubScreen extends StatelessWidget {
                   CircleAvatar(
                     radius: 36,
                     backgroundColor: AppColors.primary,
-                    child: const Icon(Icons.person, color: Colors.white, size: 40),
+                    backgroundImage: student.avatarUrl != null && student.avatarUrl!.isNotEmpty
+                        ? NetworkImage(ApiEndpoints.getImageUrl(student.avatarUrl!))
+                        : null,
+                    child: student.avatarUrl == null || student.avatarUrl!.isEmpty
+                        ? const Icon(Icons.person, color: Colors.white, size: 40)
+                        : null,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(fullName, style: AppTextStyles.h2),
+                        Text(student.fullName, style: AppTextStyles.h2),
                         const SizedBox(height: 4),
                         Text(
-                          'MSSV: $studentCode',
+                          'MSSV: ${student.studentCode}',
                           style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Học kỳ: Fall 2026 | Lớp: SE1712',
+                          'Ngành: ${student.major}',
                           style: AppTextStyles.caption,
                         ),
                       ],
@@ -74,8 +116,13 @@ class ChildDetailHubScreen extends StatelessWidget {
                   color: AppColors.primary,
                   label: 'Thời khóa biểu',
                   onTap: () {
-                    // Temporarily show a snackbar, but later link to timetable screen or just select tab
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chức năng có ở tab Lịch học')));
+                    // Navigate to timetable screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TimetableScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildActionTile(
@@ -83,21 +130,42 @@ class ChildDetailHubScreen extends StatelessWidget {
                   icon: Icons.how_to_reg_rounded,
                   color: AppColors.success,
                   label: 'Điểm danh',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon'))),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AttendanceScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildActionTile(
                   context,
                   icon: Icons.grade_rounded,
                   color: AppColors.accent,
                   label: 'Bảng điểm',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon'))),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TranscriptScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildActionTile(
                   context,
                   icon: Icons.payment_rounded,
                   color: AppColors.error,
                   label: 'Học phí',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon'))),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FeeScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

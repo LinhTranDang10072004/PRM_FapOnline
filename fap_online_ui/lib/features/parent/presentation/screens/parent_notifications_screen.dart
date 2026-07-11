@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/parent_models.dart';
-import '../../provider/parent_notifications_provider.dart';
-import '../../utils/display_utils.dart';
+import 'package:fap_online_ui/features/parent/data/models/parent_models.dart';
+import '../providers/parent_notifications_provider.dart';
+import 'package:fap_online_ui/utils/display_utils.dart';
 
 class ParentNotificationsScreen extends StatelessWidget {
   const ParentNotificationsScreen({super.key});

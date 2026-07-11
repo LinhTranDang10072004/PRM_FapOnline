@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
-import '../../theme/app_shadows.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/child_selector.dart';
+import '../../provider/attendance_provider.dart';
+import '../../provider/parent_child_provider.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -14,18 +16,72 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  int _selectedChildId = 1;
-  String _selectedFilter = 'Tất cả môn';
+  late DateTime _startDate;
+  late DateTime _endDate;
+  int? _selectedChildId;
 
-  final List<ChildData> _children = const [
-    ChildData(studentId: 1, name: 'Nguyễn Văn B'),
-    ChildData(studentId: 2, name: 'Nguyễn Thị C'),
-  ];
-  
-  final List<String> _filters = ['Tất cả môn', 'PRM301', 'SWP391', 'JPD113'];
+  @override
+  void initState() {
+    super.initState();
+    _endDate = DateTime.now();
+    _startDate = _endDate.subtract(const Duration(days: 30));
+    
+    // Load children and fetch attendance
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final childProvider = context.read<ParentChildProvider>();
+      if (childProvider.children.isNotEmpty && _selectedChildId == null) {
+        _selectedChildId = childProvider.children.first.studentId;
+        _fetchAttendance();
+      }
+    });
+  }
+
+  void _fetchAttendance() {
+    if (_selectedChildId == null) return;
+    
+    final provider = context.read<AttendanceProvider>();
+    provider.fetchStudentAttendance(
+      _selectedChildId!,
+      _startDate.toString().split(' ')[0],
+      _endDate.toString().split(' ')[0],
+    );
+  }
+
+  void _onChildSelected(int childId) {
+    setState(() => _selectedChildId = childId);
+    _fetchAttendance();
+  }
+
+  void _onDateRangeChanged(DateTime start, DateTime end) {
+    setState(() {
+      _startDate = start;
+      _endDate = end;
+    });
+    _fetchAttendance();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final childProvider = context.watch<ParentChildProvider>();
+    final attendanceProvider = context.watch<AttendanceProvider>();
+
+    if (childProvider.children.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Báo cáo điểm danh', style: AppTextStyles.h2),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Text('Chưa có dữ liệu học sinh'),
+        ),
+      );
+    }
+
+    _selectedChildId ??= childProvider.children.first.studentId;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -36,174 +92,183 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ),
       body: Column(
         children: [
-          if (_children.length > 1)
+          if (childProvider.children.length > 1)
             ChildSelector(
-              children: _children,
-              selectedId: _selectedChildId,
-              onSelected: (id) => setState(() => _selectedChildId = id),
+              children: childProvider.children
+                  .map((c) => ChildData(studentId: c.studentId, name: c.fullName))
+                  .toList(),
+              selectedId: _selectedChildId!,
+              onSelected: _onChildSelected,
             ),
           
           const SizedBox(height: 12),
           
-          // Filters
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          // Date Range Selector
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                ..._filters.map((filter) {
-                  final isSelected = filter == _selectedFilter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      selected: isSelected,
-                      label: Text(filter),
-                      onSelected: (selected) => setState(() => _selectedFilter = filter),
-                      backgroundColor: Colors.white,
-                      selectedColor: AppColors.primary,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.border,
-                        ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate,
+                        firstDate: DateTime(2020),
+                        lastDate: _endDate,
+                      );
+                      if (picked != null && picked != _startDate) {
+                        setState(() => _startDate = picked);
+                        _fetchAttendance();
+                      }
+                    },
+                    child: AppCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Từ ngày', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(_startDate.toString().split(' ')[0], style: AppTextStyles.subtitle),
+                              ),
+                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                }),
-                const SizedBox(width: 8),
-                Chip(
-                  label: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Fall 2026'),
-                      Icon(Icons.arrow_drop_down, size: 18),
-                    ],
                   ),
-                  backgroundColor: AppColors.primaryLight.withOpacity(0.1),
-                  side: BorderSide.none,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate,
+                        firstDate: _startDate,
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null && picked != _endDate) {
+                        setState(() => _endDate = picked);
+                        _fetchAttendance();
+                      }
+                    },
+                    child: AppCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Đến ngày', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(_endDate.toString().split(' ')[0], style: AppTextStyles.subtitle),
+                              ),
+                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           
           const SizedBox(height: 12),
-          
-          // Summary
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: AppCard(
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatItem('45', 'Có mặt', AppColors.success),
-                      Container(height: 40, width: 1, color: AppColors.divider),
-                      _buildStatItem('3', 'Vắng CP', AppColors.warning),
-                      Container(height: 40, width: 1, color: AppColors.divider),
-                      _buildStatItem('1', 'Vắng KP', AppColors.error),
-                      Container(height: 40, width: 1, color: AppColors.divider),
-                      _buildStatItem('2', 'Muộn', AppColors.accent),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: 45 / 51,
-                      minHeight: 8,
-                      backgroundColor: AppColors.divider,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
+
+          if (attendanceProvider.isLoading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (attendanceProvider.error != null)
+            Expanded(
+              child: Center(
+                child: Text(
+                  attendanceProvider.error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.error),
+                ),
+              ),
+            )
+          else if (attendanceProvider.attendanceList.isEmpty)
+            Expanded(
+              child: Center(
+                child: Text(
+                  'Không có dữ liệu điểm danh',
+                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: attendanceProvider.attendanceList.length,
+                itemBuilder: (context, index) {
+                  final attendance = attendanceProvider.attendanceList[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: AppCard(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  attendance.subjectCode,
+                                  style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  attendance.date,
+                                  style: AppTextStyles.caption,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  attendance.timeSlot,
+                                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildStatusBadge(attendance.status),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('88% tỷ lệ điểm danh', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600)),
-                ],
+                  );
+                },
               ),
             ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // List
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildSubjectGroup('PRM301 - Mobile Programming', [
-                  _SessionData('28/06', 'Slot 1 (07:30)', const StatusBadge.present()),
-                  _SessionData('30/06', 'Slot 1 (07:30)', const StatusBadge.late()),
-                  _SessionData('05/07', 'Slot 1 (07:30)', const StatusBadge.absent()),
-                  _SessionData('07/07', 'Slot 1 (07:30)', const StatusBadge.present()),
-                ]),
-                const SizedBox(height: 16),
-                _buildSubjectGroup('SWP391 - Software Project', [
-                  _SessionData('28/06', 'Slot 2 (09:30)', const StatusBadge.present()),
-                  _SessionData('02/07', 'Slot 2 (09:30)', const StatusBadge.excused()),
-                  _SessionData('05/07', 'Slot 2 (09:30)', const StatusBadge.present()),
-                ]),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String number, String label, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(number, style: AppTextStyles.h2.copyWith(color: color)),
-        Text(label, style: AppTextStyles.caption),
-      ],
-    );
-  }
-
-  Widget _buildSubjectGroup(String title, List<_SessionData> sessions) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        AppCard(
-          padding: const EdgeInsets.all(0),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: sessions.length,
-            separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.divider),
-            itemBuilder: (context, index) {
-              final session = sessions[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Text(session.date, style: AppTextStyles.caption),
-                    const SizedBox(width: 16),
-                    Text(session.time, style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w500)),
-                    const Spacer(),
-                    session.statusBadge,
-                  ],
-                ),
-              );
-            },
+  Widget _buildStatusBadge(String status) {
+    switch (status.toUpperCase()) {
+      case 'PRESENT':
+        return StatusBadge.present();
+      case 'ABSENT':
+        return StatusBadge.absent();
+      case 'LATE':
+        return StatusBadge.late();
+      case 'EXCUSED':
+        return StatusBadge.excused();
+      default:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.divider,
+            borderRadius: BorderRadius.circular(4),
           ),
-        ),
-      ],
-    );
+          child: Text(status, style: AppTextStyles.caption),
+        );
+    }
   }
-}
-
-class _SessionData {
-  final String date;
-  final String time;
-  final Widget statusBadge;
-  _SessionData(this.date, this.time, this.statusBadge);
 }

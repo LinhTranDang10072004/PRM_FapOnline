@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_endpoints.dart';
 import '../utils/preferences.dart';
@@ -52,6 +52,26 @@ class ApiService {
         headers: await _getHeaders(),
         body: body != null ? jsonEncode(body) : null,
       ).timeout(const Duration(seconds: 15));
+      return _processResponse(response);
+    } catch (e) {
+      throw ApiException(e.toString(), 0);
+    }
+  }
+
+  Future<dynamic> uploadFile(String endpoint, String filePath) async {
+    try {
+      final token = await PreferencesHelper.getToken();
+      var request = http.MultipartRequest('POST', Uri.parse(ApiEndpoints.baseUrl + endpoint));
+      
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      
+      var streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      var response = await http.Response.fromStream(streamedResponse);
+      
       return _processResponse(response);
     } catch (e) {
       throw ApiException(e.toString(), 0);

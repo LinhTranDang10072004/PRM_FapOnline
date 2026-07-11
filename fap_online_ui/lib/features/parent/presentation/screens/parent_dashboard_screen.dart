@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_routes.dart';
-import '../../models/parent_models.dart';
-import '../../provider/parent_dashboard_provider.dart';
-import '../../utils/display_utils.dart';
+import 'package:fap_online_ui/config/app_routes.dart';
+import 'package:fap_online_ui/features/parent/data/models/parent_models.dart';
+import '../providers/parent_dashboard_provider.dart';
+import 'package:fap_online_ui/utils/display_utils.dart';
 
 class ParentDashboardScreen extends StatelessWidget {
   const ParentDashboardScreen({super.key});

@@ -36,6 +36,7 @@ public class ParentChildServiceImpl implements ParentChildService {
     private final ClassGradeComponentRepository classGradeComponentRepository;
     private final GradeComponentRepository gradeComponentRepository;
     private final FeeTypeRepository feeTypeRepository;
+    private final FinalGradeRepository finalGradeRepository;
 
     private final ParentValidationService parentValidationService;
 
@@ -73,15 +74,14 @@ public class ParentChildServiceImpl implements ParentChildService {
     }
 
     @Override
-    public List<WeeklyTimetableDTO> getChildTimetable(Integer studentId, LocalDate week) {
+    public List<WeeklyTimetableDTO> getChildTimetable(Integer studentId, LocalDate startDate, LocalDate endDate) {
         Integer userId = SecurityUtils.extractUserId();
         parentValidationService.validateParentOwnsStudent(studentId);
         
-        LocalDate targetDate = week != null ? week : LocalDate.now();
-        LocalDate startDate = targetDate.minusDays(targetDate.getDayOfWeek().getValue() - 1);
-        LocalDate endDate = startDate.plusDays(6);
+        LocalDate finalStartDate = startDate != null ? startDate : LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
+        LocalDate finalEndDate = endDate != null ? endDate : finalStartDate.plusDays(6);
 
-        List<Schedule> schedules = scheduleRepository.findWeeklySchedulesForStudents(List.of(studentId), startDate, endDate);
+        List<Schedule> schedules = scheduleRepository.findWeeklySchedulesForStudents(List.of(studentId), finalStartDate, finalEndDate);
         
         return schedules.stream().map(s -> {
             SchoolClass schoolClass = schoolClassRepository.findById(s.getClassId()).orElse(null);
@@ -139,8 +139,21 @@ public class ParentChildServiceImpl implements ParentChildService {
     public List<TranscriptDTO> getChildTranscript(Integer studentId) {
         Integer userId = SecurityUtils.extractUserId();
         parentValidationService.validateParentOwnsStudent(studentId);
-        // Similar to grades, but aggregated. Returning empty for now.
-        return Collections.emptyList();
+        
+        // Ensure you have FinalGradeRepository injected
+        List<FinalGrade> grades = finalGradeRepository.findByStudentId(studentId);
+        
+        return grades.stream().map(g -> {
+            SchoolClass schoolClass = schoolClassRepository.findById(g.getClassId()).orElse(null);
+            Subject subject = schoolClass != null ? subjectRepository.findById(schoolClass.getSubjectId()).orElse(null) : null;
+            
+            return TranscriptDTO.builder()
+                    .subjectCode(subject != null ? subject.getSubjectCode() : "")
+                    .subjectName(subject != null ? subject.getSubjectName() : "")
+                    .finalScore(g.getFinalScore())
+                    .status(g.getStatus())
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     @Override

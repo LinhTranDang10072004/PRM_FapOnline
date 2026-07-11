@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/parent_models.dart';
-import '../services/parent_repository.dart';
+import '../../data/models/parent_models.dart';
+import '../../domain/repositories/parent_repository.dart';
 
 class ParentProfileProvider extends ChangeNotifier {
   final ParentRepository _repository;

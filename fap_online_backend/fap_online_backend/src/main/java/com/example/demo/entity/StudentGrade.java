@@ -37,6 +37,9 @@ public class StudentGrade {
     @Column(name = "UpdatedAt")
     private LocalDateTime updatedAt;
 
+    @Column(name = "SemesterId")
+    private Integer semesterId;
+
     public Integer getStudentGradeId() {
         return studentGradeId;
     }
@@ -107,6 +110,14 @@ public class StudentGrade {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getSemesterId() {
+        return semesterId;
+    }
+
+    public void setSemesterId(Integer semesterId) {
+        this.semesterId = semesterId;
     }
 
 }

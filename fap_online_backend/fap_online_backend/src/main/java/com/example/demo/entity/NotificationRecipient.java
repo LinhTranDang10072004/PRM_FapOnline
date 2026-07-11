@@ -24,6 +24,20 @@ public class NotificationRecipient {
     @Column(name = "ReadAt")
     private LocalDateTime readAt;
 
+    @Column(name = "SentAt")
+    private LocalDateTime sentAt;
+
+    // Constructors
+    public NotificationRecipient() {}
+
+    public NotificationRecipient(Integer notificationId, Integer userId) {
+        this.notificationId = notificationId;
+        this.userId = userId;
+        this.isRead = false;
+        this.sentAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
     public Integer getNotificationRecipientId() {
         return notificationRecipientId;
     }
@@ -62,6 +76,14 @@ public class NotificationRecipient {
 
     public void setReadAt(LocalDateTime readAt) {
         this.readAt = readAt;
+    }
+
+    public LocalDateTime getSentAt() {
+        return sentAt;
+    }
+
+    public void setSentAt(LocalDateTime sentAt) {
+        this.sentAt = sentAt;
     }
 
 }

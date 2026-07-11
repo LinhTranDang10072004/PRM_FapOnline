@@ -6,12 +6,14 @@ class NotificationDetailScreen extends StatelessWidget {
   final String title;
   final String sender;
   final String time;
+  final String? message;
 
   const NotificationDetailScreen({
     super.key,
     required this.title,
     required this.sender,
     required this.time,
+    this.message,
   });
 
   @override
@@ -43,25 +45,12 @@ class NotificationDetailScreen extends StatelessWidget {
                 Text(time, style: AppTextStyles.caption),
               ],
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              children: [
-                Chip(
-                  label: const Text('Nguyễn Văn B'),
-                  backgroundColor: AppColors.shimmerHighlight,
-                  side: BorderSide.none,
-                  labelStyle: AppTextStyles.captionBold,
-                  padding: EdgeInsets.zero,
-                ),
-              ],
-            ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Divider(color: AppColors.divider),
             ),
             Text(
-              'Kính gửi Quý Phụ huynh,\n\nNhà trường xin thông báo lịch thi cuối kỳ học kỳ Fall 2026 đã được cập nhật trên hệ thống. Quý phụ huynh vui lòng kiểm tra mục "Thời khóa biểu" hoặc "Bảng điểm" để theo dõi chi tiết lịch thi của con em mình.\n\nNếu có bất kỳ thắc mắc nào, xin vui lòng liên hệ phòng đào tạo qua email hoặc số điện thoại hỗ trợ.\n\nTrân trọng,\n$sender',
+              message ?? 'Không có nội dung thông báo.',
               style: AppTextStyles.body.copyWith(height: 1.6),
             ),
           ],

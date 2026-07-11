@@ -11,7 +11,7 @@ public interface ParentChildService {
     
     ChildDetailDTO getChildDetail(Integer studentId);
     
-    List<WeeklyTimetableDTO> getChildTimetable(Integer studentId, LocalDate week);
+    List<WeeklyTimetableDTO> getChildTimetable(Integer studentId, LocalDate startDate, LocalDate endDate);
     
     List<AttendanceReportDTO> getChildAttendance(Integer studentId, Integer subjectId, Integer semesterId);
     

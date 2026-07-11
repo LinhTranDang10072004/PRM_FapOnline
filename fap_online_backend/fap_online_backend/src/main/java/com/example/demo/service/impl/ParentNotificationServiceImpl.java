@@ -12,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import com.example.demo.util.SecurityUtils;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +28,57 @@ public class ParentNotificationServiceImpl implements ParentNotificationService 
     @Override
     public List<NotificationDTO> getNotifications(int page, int size) {
         Integer userId = SecurityUtils.extractUserId();
-        // Find all recipient records for this user
-        // Assuming there's a findByUserId in NotificationRecipientRepository
-        // For simplicity, let's mock the return or if repo supports it.
-        // I will use a dummy return or use findAll and filter, but that's inefficient.
-        // Assuming we need to add findByUserId to repo later.
         
-        // For now, let's just return empty list as we don't have the exact repo method yet.
-        return Collections.emptyList();
+        // Get notification recipients for this user ordered by ID (most recent first)
+        List<NotificationRecipient> recipients = notificationRecipientRepository.findByUserIdOrderBySentAtDesc(userId);
+        
+        // Apply pagination manually
+        int start = page * size;
+        int end = Math.min(start + size, recipients.size());
+        
+        if (start >= recipients.size()) {
+            return Collections.emptyList();
+        }
+        
+        List<NotificationRecipient> paginatedRecipients = recipients.subList(start, end);
+        
+        // Get notification IDs
+        List<Integer> notificationIds = paginatedRecipients.stream()
+                .map(NotificationRecipient::getNotificationId)
+                .collect(Collectors.toList());
+        
+        if (notificationIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        // Fetch notifications
+        Map<Integer, Notification> notificationMap = notificationRepository.findAllById(notificationIds)
+                .stream()
+                .collect(Collectors.toMap(Notification::getNotificationId, n -> n));
+        
+        // Build DTOs
+        return paginatedRecipients.stream()
+            .map(recipient -> {
+                Notification notification = notificationMap.get(recipient.getNotificationId());
+                if (notification == null) {
+                    return null;
+                }
+                
+                // Use sentAt if available, otherwise use notification's createdAt
+                LocalDateTime displayTime = recipient.getSentAt() != null 
+                    ? recipient.getSentAt() 
+                    : (notification.getCreatedAt() != null ? notification.getCreatedAt() : LocalDateTime.now());
+                
+                return NotificationDTO.builder()
+                        .notificationId(recipient.getNotificationRecipientId())
+                        .title(notification.getTitle() != null ? notification.getTitle() : "")
+                        .message(notification.getContent() != null ? notification.getContent() : "")
+                        .sentAt(displayTime)
+                        .isRead(recipient.getIsRead() != null ? recipient.getIsRead() : false)
+                        .build();
+            })
+            .filter(dto -> dto != null)
+            .collect(Collectors.toList());
     }
 
     @Override

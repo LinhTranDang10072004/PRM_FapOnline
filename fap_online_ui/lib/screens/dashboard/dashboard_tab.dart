@@ -160,16 +160,36 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildSummaryGrid() {
+    final childProvider = context.watch<ParentChildProvider>();
+    final selectedChildId = childProvider.selectedChildId;
     final data = context.read<DashboardProvider>().dashboardData;
-    final todaySchedulesCount = data?.todaySchedules.length ?? 0;
     
-    // Sum unpaid fees
+    // Filter data for selected child if available
+    int todaySchedulesCount = 0;
     double totalUnpaid = 0;
-    if (data != null && data.unpaidFees.isNotEmpty) {
-      for (var f in data.unpaidFees) {
-        totalUnpaid += (f.amount - f.paidAmount);
+    int recentGradesCount = 0;
+    
+    if (data != null) {
+      if (selectedChildId != null) {
+        // Filter for selected child
+        todaySchedulesCount = data.todaySchedules.where((s) => s.studentId == null || s.studentId == selectedChildId).length;
+        
+        final childUnpaidFees = data.unpaidFees.where((f) => f.studentId == selectedChildId).toList();
+        for (var f in childUnpaidFees) {
+          totalUnpaid += (f.amount - f.paidAmount);
+        }
+        
+        recentGradesCount = data.recentGrades.where((g) => g.studentId == selectedChildId).length;
+      } else {
+        // Show all
+        todaySchedulesCount = data.todaySchedules.length;
+        for (var f in data.unpaidFees) {
+          totalUnpaid += (f.amount - f.paidAmount);
+        }
+        recentGradesCount = data.recentGrades.length;
       }
     }
+    
     String unpaidDisplay = '0';
     if (totalUnpaid > 0) {
       unpaidDisplay = '${(totalUnpaid / 1000000).toStringAsFixed(1)}M';
@@ -207,7 +227,7 @@ class _DashboardTabState extends State<DashboardTab> {
             iconColor: AppColors.accent,
             iconBgColor: AppColors.accent.withOpacity(0.1),
             title: 'Điểm mới công bố',
-            value: data?.recentGrades.length.toString() ?? '0',
+            value: recentGradesCount.toString(),
             subtitle: 'Gần đây',
           ),
           SummaryCard(

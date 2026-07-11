@@ -20,13 +20,16 @@ class TimetableScreen extends StatefulWidget {
 
 class _TimetableScreenState extends State<TimetableScreen> {
   String _selectedFilter = 'all'; // 'all', 'present', 'absent', 'not_yet'
-  late DateTime _currentWeekStart;
+  late DateTime _startDate;
+  late DateTime _endDate;
   bool _isInit = false;
 
   @override
   void initState() {
     super.initState();
-    _currentWeekStart = _getMonday(DateTime.now());
+    _endDate = DateTime.now();
+    _startDate = _getMonday(_endDate);
+    _endDate = _startDate.add(const Duration(days: 6));
   }
 
   @override
@@ -36,9 +39,18 @@ class _TimetableScreenState extends State<TimetableScreen> {
       _isInit = true;
       final provider = context.read<ParentChildProvider>();
       if (provider.selectedChildId != null) {
-        provider.fetchTimetable(week: DateFormat('yyyy-MM-dd').format(_currentWeekStart));
+        final startDateStr = DateFormat('yyyy-MM-dd').format(_startDate);
+        final endDateStr = DateFormat('yyyy-MM-dd').format(_endDate);
+        provider.fetchTimetable(startDate: startDateStr, endDate: endDateStr);
       }
     }
+  }
+
+  void _fetchTimetable() {
+    final provider = context.read<ParentChildProvider>();
+    final startDateStr = DateFormat('yyyy-MM-dd').format(_startDate);
+    final endDateStr = DateFormat('yyyy-MM-dd').format(_endDate);
+    provider.fetchTimetable(startDate: startDateStr, endDate: endDateStr);
   }
 
   DateTime _getMonday(DateTime date) {
@@ -59,52 +71,79 @@ class _TimetableScreenState extends State<TimetableScreen> {
       ),
       body: Column(
         children: [
-          // Week selector
+          // Date Range Selector
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: AppShadows.subtle,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left_rounded),
-                    onPressed: () {
-                      setState(() {
-                        _currentWeekStart = _currentWeekStart.subtract(const Duration(days: 7));
-                      });
-                      provider.fetchTimetable(week: DateFormat('yyyy-MM-dd').format(_currentWeekStart));
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate.isBefore(DateTime.now()) ? _startDate : DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: _endDate.isBefore(DateTime.now()) ? _endDate : DateTime.now(),
+                      );
+                      if (picked != null && picked != _startDate) {
+                        setState(() => _startDate = picked);
+                        _fetchTimetable();
+                      }
                     },
-                  ),
-                  InkWell(
-                    onTap: () => _selectDate(context, provider),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                      child: Text(
-                        _formatWeekRange(),
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    child: AppCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Từ ngày', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(_startDate.toString().split(' ')[0], style: AppTextStyles.subtitle),
+                              ),
+                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded),
-                    onPressed: () {
-                      setState(() {
-                        _currentWeekStart = _currentWeekStart.add(const Duration(days: 7));
-                      });
-                      provider.fetchTimetable(week: DateFormat('yyyy-MM-dd').format(_currentWeekStart));
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate.isAfter(DateTime.now()) ? DateTime.now() : _endDate,
+                        firstDate: _startDate,
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null && picked != _endDate) {
+                        setState(() => _endDate = picked);
+                        _fetchTimetable();
+                      }
                     },
+                    child: AppCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Đến ngày', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(_endDate.toString().split(' ')[0], style: AppTextStyles.subtitle),
+                              ),
+                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           
@@ -144,7 +183,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     onChanged: (value) {
                       if (value != null) {
                         provider.selectChild(value);
-                        provider.fetchTimetable(week: DateFormat('yyyy-MM-dd').format(_currentWeekStart));
+                        _fetchTimetable();
                       }
                     },
                   ),
@@ -186,44 +225,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  Future<void> _selectDate(BuildContext context, ParentChildProvider provider) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _currentWeekStart,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _currentWeekStart = _getMonday(picked);
-      });
-      provider.fetchTimetable(week: DateFormat('yyyy-MM-dd').format(_currentWeekStart));
-    }
-  }
-
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
   }
 
-  String _formatWeekRange() {
-    final endWeek = _currentWeekStart.add(const Duration(days: 6));
-    return 'Tuần ${_formatDate(_currentWeekStart)} - ${_formatDate(endWeek)}/${endWeek.year}';
-  }
-
   String _formatDayHeader(int dayOffset) {
-    final date = _currentWeekStart.add(Duration(days: dayOffset));
+    final date = _startDate.add(Duration(days: dayOffset));
     final weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
     return '${weekdays[date.weekday - 1]}, ${_formatDate(date)}/${date.year}';
   }
@@ -239,10 +246,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
     // Group by date
     final grouped = <String, List<WeeklyTimetableDTO>>{};
     for (var s in schedules) {
-      if (!grouped.containsKey(s.scheduleDate)) {
-        grouped[s.scheduleDate] = [];
+      final dateStr = s.scheduleDate.toString();
+      if (!grouped.containsKey(dateStr)) {
+        grouped[dateStr] = [];
       }
-      grouped[s.scheduleDate]!.add(s);
+      grouped[dateStr]!.add(s);
     }
     
     // Sort dates
@@ -275,8 +283,23 @@ class _TimetableScreenState extends State<TimetableScreen> {
         items.add(_buildDayHeader(dayStr));
 
         for (var s in filtered) {
-          final timeStr = '${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}';
-          final statusStr = s.status.toLowerCase(); // 'present', 'absent', 'not_yet'
+          // Parse time safely
+          String startTimeStr = '??:??';
+          String endTimeStr = '??:??';
+          
+          try {
+            if (s.startTime != null) {
+              startTimeStr = s.startTime.toString().substring(0, 5);
+            }
+            if (s.endTime != null) {
+              endTimeStr = s.endTime.toString().substring(0, 5);
+            }
+          } catch (e) {
+            print('Error parsing time: $e');
+          }
+          
+          final timeStr = '$startTimeStr - $endTimeStr';
+          final statusStr = s.status?.toLowerCase() ?? 'not_yet'; // 'present', 'absent', 'not_yet'
           items.add(_buildSessionCard(s.subjectCode, timeStr, s.roomName, 'Lecturer', 'Class', statusStr));
         }
       } else if (_selectedFilter == 'all') {

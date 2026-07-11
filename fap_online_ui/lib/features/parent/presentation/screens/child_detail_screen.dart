@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/parent_models.dart';
-import '../../provider/child_detail_provider.dart';
-import '../../utils/display_utils.dart';
+import 'package:fap_online_ui/features/parent/data/models/parent_models.dart';
+import '../providers/child_detail_provider.dart';
+import 'package:fap_online_ui/utils/display_utils.dart';
 
 class ChildDetailScreen extends StatefulWidget {
   final int studentId;

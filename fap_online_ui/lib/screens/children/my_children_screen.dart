@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../provider/parent_child_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
-import '../../theme/app_shadows.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/empty_state.dart';
+import '../../config/api_endpoints.dart';
 
 class MyChildrenScreen extends StatelessWidget {
   const MyChildrenScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Mock data
-    final List<Map<String, dynamic>> children = [
-      {
-        'id': 1,
-        'name': 'Nguyễn Văn B',
-        'code': 'SE171234',
-        'major': 'Kỹ thuật phần mềm',
-        'status': 'active'
-      },
-      {
-        'id': 2,
-        'name': 'Nguyễn Thị C',
-        'code': 'SE171567',
-        'major': 'Thiết kế đồ họa',
-        'status': 'active'
-      },
-    ];
+    final provider = context.watch<ParentChildProvider>();
+
+    if (provider.isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final children = provider.children;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,12 +44,14 @@ class MyChildrenScreen extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final child = children[index];
+                final isActive = child.academicStatus?.toLowerCase() == 'active';
+                
                 return AppCard(
                   onTap: () {
                     Navigator.pushNamed(
                       context,
                       '/child-detail',
-                      arguments: child['id'],
+                      arguments: child.studentId,
                     );
                   },
                   padding: const EdgeInsets.all(16),
@@ -63,7 +60,12 @@ class MyChildrenScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 28,
                         backgroundColor: AppColors.primary,
-                        child: const Icon(Icons.person, color: Colors.white, size: 28),
+                        backgroundImage: child.avatarUrl != null && child.avatarUrl!.isNotEmpty
+                            ? NetworkImage(ApiEndpoints.getImageUrl(child.avatarUrl!))
+                            : null,
+                        child: child.avatarUrl == null || child.avatarUrl!.isEmpty
+                            ? const Icon(Icons.person, color: Colors.white, size: 28)
+                            : null,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -71,23 +73,23 @@ class MyChildrenScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              child['name'],
+                              child.fullName,
                               style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'MSSV: ${child['code']}',
+                              'MSSV: ${child.studentCode}',
                               style: AppTextStyles.caption,
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Ngành: ${child['major']}',
+                              'Ngành: ${child.major}',
                               style: AppTextStyles.caption,
                             ),
                           ],
                         ),
                       ),
-                      if (child['status'] == 'active')
+                      if (isActive)
                         StatusBadge.active()
                       else
                         StatusBadge.onLeave(),
