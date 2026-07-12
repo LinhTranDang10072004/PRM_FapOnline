@@ -29,6 +29,7 @@ public class ParentDashboardServiceImpl implements ParentDashboardService {
     private final ScheduleRepository scheduleRepository;
     private final StudentGradeRepository studentGradeRepository;
     private final StudentFeeRepository studentFeeRepository;
+    private final AttendanceRepository attendanceRepository;
     
     private final SchoolClassRepository schoolClassRepository;
     private final SubjectRepository subjectRepository;
@@ -52,6 +53,8 @@ public class ParentDashboardServiceImpl implements ParentDashboardService {
                     .todaySchedules(new ArrayList<>())
                     .recentGrades(new ArrayList<>())
                     .unpaidFees(new ArrayList<>())
+                    .attendancePresentCount(0)
+                    .attendanceTotalCount(0)
                     .build();
         }
 
@@ -66,6 +69,8 @@ public class ParentDashboardServiceImpl implements ParentDashboardService {
                     .todaySchedules(new ArrayList<>())
                     .recentGrades(new ArrayList<>())
                     .unpaidFees(new ArrayList<>())
+                    .attendancePresentCount(0)
+                    .attendanceTotalCount(0)
                     .build();
         }
 
@@ -156,12 +161,21 @@ public class ParentDashboardServiceImpl implements ParentDashboardService {
                      .build();
         }).collect(Collectors.toList());
 
+        List<Attendance> attendances = attendanceRepository.findByStudentIdIn(studentIds);
+        int attendanceTotalCount = attendances.size();
+        int attendancePresentCount = (int) attendances.stream()
+                .filter(attendance -> "PRESENT".equalsIgnoreCase(attendance.getStatus())
+                        || "LATE".equalsIgnoreCase(attendance.getStatus()))
+                .count();
+
         return DashboardResponse.builder()
                 .children(children)
                 .unreadNotificationCount(unreadCount)
                 .todaySchedules(todaySchedules)
                 .recentGrades(recentGrades)
                 .unpaidFees(unpaidFees)
+                .attendancePresentCount(attendancePresentCount)
+                .attendanceTotalCount(attendanceTotalCount)
                 .build();
     }
 }

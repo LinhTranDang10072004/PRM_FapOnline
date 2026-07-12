@@ -114,6 +114,8 @@ class DashboardResponse {
   final List<TodayScheduleDTO> todaySchedules;
   final List<RecentGradeDTO> recentGrades;
   final List<UnpaidFeeDTO> unpaidFees;
+  final int attendancePresentCount;
+  final int attendanceTotalCount;
 
   DashboardResponse({
     required this.children,
@@ -121,15 +123,35 @@ class DashboardResponse {
     required this.todaySchedules,
     required this.recentGrades,
     required this.unpaidFees,
+    required this.attendancePresentCount,
+    required this.attendanceTotalCount,
   });
 
   factory DashboardResponse.fromJson(Map<String, dynamic> json) {
     return DashboardResponse(
-      children: (json['children'] as List?)?.map((e) => ChildSummaryDTO.fromJson(e)).toList() ?? [],
+      children:
+          (json['children'] as List?)
+              ?.map((e) => ChildSummaryDTO.fromJson(e))
+              .toList() ??
+          [],
       unreadNotificationCount: json['unreadNotificationCount'] ?? 0,
-      todaySchedules: (json['todaySchedules'] as List?)?.map((e) => TodayScheduleDTO.fromJson(e)).toList() ?? [],
-      recentGrades: (json['recentGrades'] as List?)?.map((e) => RecentGradeDTO.fromJson(e)).toList() ?? [],
-      unpaidFees: (json['unpaidFees'] as List?)?.map((e) => UnpaidFeeDTO.fromJson(e)).toList() ?? [],
+      todaySchedules:
+          (json['todaySchedules'] as List?)
+              ?.map((e) => TodayScheduleDTO.fromJson(e))
+              .toList() ??
+          [],
+      recentGrades:
+          (json['recentGrades'] as List?)
+              ?.map((e) => RecentGradeDTO.fromJson(e))
+              .toList() ??
+          [],
+      unpaidFees:
+          (json['unpaidFees'] as List?)
+              ?.map((e) => UnpaidFeeDTO.fromJson(e))
+              .toList() ??
+          [],
+      attendancePresentCount: json['attendancePresentCount'] ?? 0,
+      attendanceTotalCount: json['attendanceTotalCount'] ?? 0,
     );
   }
 }

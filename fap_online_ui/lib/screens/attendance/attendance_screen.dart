@@ -25,20 +25,26 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     super.initState();
     _endDate = DateTime.now();
     _startDate = _endDate.subtract(const Duration(days: 30));
-    
-    // Load children and fetch attendance
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final childProvider = context.read<ParentChildProvider>();
-      if (childProvider.children.isNotEmpty && _selectedChildId == null) {
-        _selectedChildId = childProvider.children.first.studentId;
-        _fetchAttendance();
-      }
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Children are loaded asynchronously. Initialise this filter as soon as
+    // they become available, then load the data without requiring a tap.
+    final children = context.read<ParentChildProvider>().children;
+    if (_selectedChildId == null && children.isNotEmpty) {
+      _selectedChildId = children.first.studentId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchAttendance();
+      });
+    }
   }
 
   void _fetchAttendance() {
     if (_selectedChildId == null) return;
-    
+
     final provider = context.read<AttendanceProvider>();
     provider.fetchStudentAttendance(
       _selectedChildId!,
@@ -74,13 +80,18 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           elevation: 0,
           centerTitle: true,
         ),
-        body: const Center(
-          child: Text('Chưa có dữ liệu học sinh'),
-        ),
+        body: const Center(child: Text('Chưa có dữ liệu học sinh')),
       );
     }
 
-    _selectedChildId ??= childProvider.children.first.studentId;
+    // Fallback for a provider update that rebuilds this screen without
+    // invoking didChangeDependencies.
+    if (_selectedChildId == null) {
+      _selectedChildId = childProvider.children.first.studentId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchAttendance();
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -95,14 +106,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           if (childProvider.children.length > 1)
             ChildSelector(
               children: childProvider.children
-                  .map((c) => ChildData(studentId: c.studentId, name: c.fullName))
+                  .map(
+                    (c) => ChildData(studentId: c.studentId, name: c.fullName),
+                  )
                   .toList(),
               selectedId: _selectedChildId!,
               onSelected: _onChildSelected,
             ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Date Range Selector
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -127,13 +140,26 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Từ ngày', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          const Text(
+                            'Từ ngày',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                           Row(
                             children: [
                               Expanded(
-                                child: Text(_startDate.toString().split(' ')[0], style: AppTextStyles.subtitle),
+                                child: Text(
+                                  _startDate.toString().split(' ')[0],
+                                  style: AppTextStyles.subtitle,
+                                ),
                               ),
-                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
                             ],
                           ),
                         ],
@@ -161,13 +187,26 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Đến ngày', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          const Text(
+                            'Đến ngày',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                           Row(
                             children: [
                               Expanded(
-                                child: Text(_endDate.toString().split(' ')[0], style: AppTextStyles.subtitle),
+                                child: Text(
+                                  _endDate.toString().split(' ')[0],
+                                  style: AppTextStyles.subtitle,
+                                ),
                               ),
-                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
                             ],
                           ),
                         ],
@@ -178,13 +217,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 12),
 
           if (attendanceProvider.isLoading)
-            const Expanded(
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const Expanded(child: Center(child: CircularProgressIndicator()))
           else if (attendanceProvider.error != null)
             Expanded(
               child: Center(
@@ -200,7 +237,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               child: Center(
                 child: Text(
                   'Không có dữ liệu điểm danh',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             )
@@ -222,7 +261,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               children: [
                                 Text(
                                   attendance.subjectCode,
-                                  style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold),
+                                  style: AppTextStyles.subtitle.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -232,7 +273,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   attendance.timeSlot,
-                                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ],
                             ),

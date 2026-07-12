@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -17,10 +17,11 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _isSaving = false;
   ProfileDTO? _profile;
-  File? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -45,32 +46,84 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
-    if (image != null) {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Chọn từ thư viện'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Chụp ảnh mới'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final image = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1200,
+      );
+      if (image == null || !mounted) return;
+      final imageBytes = await image.readAsBytes();
+      if (imageBytes.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể đọc ảnh đã chọn.')),
+        );
+        return;
+      }
       setState(() {
-        _selectedImage = File(image.path);
+        _selectedImageBytes = imageBytes;
+        _selectedImageName = image.name.isNotEmpty ? image.name : 'avatar.jpg';
       });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể chọn ảnh. Vui lòng thử lại.')),
+      );
     }
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    
+    final profileProvider = context.read<ProfileProvider>();
+
     setState(() {
       _isSaving = true;
     });
 
     String? newAvatarUrl = _profile?.avatarUrl;
-    
+
     // Upload image if selected
-    if (_selectedImage != null) {
-      final profileProvider = context.read<ProfileProvider>();
-      final uploadedUrl = await profileProvider.uploadAvatar(_selectedImage!.path);
-      if (uploadedUrl != null) {
-        newAvatarUrl = uploadedUrl;
+    if (_selectedImageBytes != null) {
+      final uploadedUrl = await profileProvider.uploadAvatar(
+        _selectedImageBytes!,
+        _selectedImageName ?? 'avatar.jpg',
+      );
+      if (uploadedUrl == null) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                profileProvider.error ?? 'Không thể tải ảnh đại diện lên.',
+              ),
+            ),
+          );
+        }
+        return;
       }
+      newAvatarUrl = uploadedUrl;
     }
 
     final updatedProfile = ProfileDTO(
@@ -81,7 +134,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       avatarUrl: newAvatarUrl,
     );
 
-    final profileProvider = context.read<ProfileProvider>();
     final success = await profileProvider.updateProfile(updatedProfile);
 
     setState(() {
@@ -89,13 +141,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lưu thông tin thành công')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lưu thông tin thành công')));
       Navigator.pop(context, true);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(profileProvider.error ?? 'Lưu thông tin thất bại')),
+        SnackBar(
+          content: Text(profileProvider.error ?? 'Lưu thông tin thất bại'),
+        ),
       );
     }
   }
@@ -106,7 +160,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Chỉnh sửa thông tin', style: AppTextStyles.subtitle),
+          title: const Text(
+            'Chỉnh sửa thông tin',
+            style: AppTextStyles.subtitle,
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
@@ -134,15 +191,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       onTap: _pickImage,
                       child: CircleAvatar(
                         radius: 40,
-                        backgroundColor: AppColors.primaryLight.withOpacity(0.2),
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!) as ImageProvider
-                            : (_profile?.avatarUrl != null && _profile!.avatarUrl!.isNotEmpty
-                                ? NetworkImage(ApiEndpoints.getImageUrl(_profile!.avatarUrl!))
-                                : null),
-                        child: _selectedImage == null && (_profile?.avatarUrl == null || _profile!.avatarUrl!.isEmpty)
-                            ? const Icon(Icons.person, size: 40, color: AppColors.primary)
-                            : null,
+                        backgroundColor: AppColors.primaryLight.withOpacity(
+                          0.2,
+                        ),
+                        child: _selectedImageBytes != null
+                            ? ClipOval(
+                                child: Image.memory(
+                                  _selectedImageBytes!,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : (_profile?.avatarUrl != null &&
+                                      _profile!.avatarUrl!.isNotEmpty
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        ApiEndpoints.getImageUrl(
+                                          _profile!.avatarUrl!,
+                                        ),
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Icon(
+                                              Icons.person,
+                                              size: 40,
+                                              color: AppColors.primary,
+                                            ),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: AppColors.primary,
+                                    )),
                       ),
                     ),
                     Positioned(
@@ -156,7 +239,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             color: AppColors.accent,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                          child: const Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -164,13 +251,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              TextButton.icon(
+                onPressed: _isSaving ? null : _pickImage,
+                icon: const Icon(Icons.photo_outlined),
+                label: Text(
+                  _selectedImageBytes == null
+                      ? 'Chọn ảnh đại diện'
+                      : 'Đã chọn ảnh mới',
+                ),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Họ và tên',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                validator: (value) => value!.isEmpty ? 'Vui lòng nhập họ tên' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Vui lòng nhập họ tên' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -196,7 +294,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 validator: (value) {
                   if (value!.isEmpty) return 'Vui lòng nhập SĐT';
-                  if (!RegExp(r'^0[0-9]{9,10}$').hasMatch(value)) return 'SĐT không hợp lệ';
+                  if (!RegExp(r'^0[0-9]{9,10}$').hasMatch(value)) {
+                    return 'SĐT không hợp lệ';
+                  }
                   return null;
                 },
               ),
@@ -230,7 +330,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Lưu thay đổi'),
                 ),
