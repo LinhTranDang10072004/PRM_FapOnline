@@ -22,4 +22,8 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
            "WHERE cs.studentId IN :studentIds AND s.scheduleDate >= :startDate AND s.scheduleDate <= :endDate " +
            "ORDER BY s.scheduleDate ASC, s.timeSlotId ASC")
     List<Schedule> findWeeklySchedulesForStudents(@Param("studentIds") List<Integer> studentIds, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    boolean existsByRoomId(Integer roomId);
+
+    boolean existsByTimeSlotId(Integer timeSlotId);
 }
