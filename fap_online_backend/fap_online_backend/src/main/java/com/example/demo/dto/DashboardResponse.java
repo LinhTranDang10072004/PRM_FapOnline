@@ -16,4 +16,6 @@ public class DashboardResponse {
     private List<TodayScheduleDTO> todaySchedules;
     private List<RecentGradeDTO> recentGrades;
     private List<UnpaidFeeDTO> unpaidFees;
+    private int attendancePresentCount;
+    private int attendanceTotalCount;
 }

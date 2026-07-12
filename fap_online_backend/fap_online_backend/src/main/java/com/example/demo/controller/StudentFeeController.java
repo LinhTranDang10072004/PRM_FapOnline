@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.StudentFeeDTO;
 import com.example.demo.service.StudentFeeService;
+import com.example.demo.service.ParentValidationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +20,13 @@ import java.util.List;
 public class StudentFeeController {
     
     private final StudentFeeService studentFeeService;
+    private final ParentValidationService parentValidationService;
     
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<StudentFeeDTO>> getStudentFees(
         @PathVariable Integer studentId
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             studentFeeService.getStudentFees(studentId)
         );
@@ -33,6 +36,7 @@ public class StudentFeeController {
     public ResponseEntity<List<StudentFeeDTO>> getUnpaidFees(
         @PathVariable Integer studentId
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             studentFeeService.getUnpaidFees(studentId)
         );
@@ -42,6 +46,7 @@ public class StudentFeeController {
     public ResponseEntity<List<StudentFeeDTO>> getOverdueFees(
         @PathVariable Integer studentId
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             studentFeeService.getOverdueFees(studentId)
         );
@@ -52,6 +57,7 @@ public class StudentFeeController {
         @PathVariable Integer studentId,
         @PathVariable Integer semesterId
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             studentFeeService.getFeesBySemester(studentId, semesterId)
         );
@@ -61,6 +67,7 @@ public class StudentFeeController {
     public ResponseEntity<BigDecimal> getTotalUnpaid(
         @PathVariable Integer studentId
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             studentFeeService.getTotalUnpaidAmount(studentId)
         );

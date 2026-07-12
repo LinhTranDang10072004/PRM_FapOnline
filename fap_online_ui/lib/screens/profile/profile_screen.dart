@@ -7,6 +7,7 @@ import '../../widgets/app_card.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 import '../../config/api_endpoints.dart';
+import '../../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -67,23 +68,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.white,
-                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(ApiEndpoints.getImageUrl(avatarUrl)) : null,
-                    child: avatarUrl == null || avatarUrl.isEmpty ? const Icon(Icons.person, size: 40, color: AppColors.primary) : null,
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                        ? NetworkImage(ApiEndpoints.getImageUrl(avatarUrl))
+                        : null,
+                    child: avatarUrl == null || avatarUrl.isEmpty
+                        ? const Icon(
+                            Icons.person,
+                            size: 40,
+                            color: AppColors.primary,
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   Text(fullName, style: AppTextStyles.h2),
                   const SizedBox(height: 4),
-                  Text(email, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    email,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(phone, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    phone,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('Phụ huynh', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    child: const Text(
+                      'Phụ huynh',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
                   ),
                 ],
               ),
@@ -95,52 +120,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.edit_outlined, color: AppColors.textPrimary),
-                    title: const Text('Chỉnh sửa thông tin', style: AppTextStyles.bodyMedium),
+                    leading: const Icon(
+                      Icons.edit_outlined,
+                      color: AppColors.textPrimary,
+                    ),
+                    title: const Text(
+                      'Chỉnh sửa thông tin',
+                      style: AppTextStyles.bodyMedium,
+                    ),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () async {
+                      final profileProvider = context.read<ProfileProvider>();
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen(),
+                        ),
                       );
                       if (mounted && result == true) {
-                        context.read<ProfileProvider>().fetchProfile();
+                        profileProvider.fetchProfile();
                       }
                     },
                   ),
-                  const Divider(indent: 56, height: 1, color: AppColors.divider),
+                  const Divider(
+                    indent: 56,
+                    height: 1,
+                    color: AppColors.divider,
+                  ),
                   ListTile(
-                    leading: const Icon(Icons.lock_outline, color: AppColors.textPrimary),
-                    title: const Text('Đổi mật khẩu', style: AppTextStyles.bodyMedium),
+                    leading: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.textPrimary,
+                    ),
+                    title: const Text(
+                      'Đổi mật khẩu',
+                      style: AppTextStyles.bodyMedium,
+                    ),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordScreen(),
+                        ),
                       );
                     },
                   ),
-                  const Divider(indent: 56, height: 1, color: AppColors.divider),
+                  const Divider(
+                    indent: 56,
+                    height: 1,
+                    color: AppColors.divider,
+                  ),
                   ListTile(
                     leading: const Icon(Icons.logout, color: AppColors.error),
-                    title: Text('Đăng xuất', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+                    title: Text(
+                      'Đăng xuất',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('Đăng xuất'),
-                          content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+                          content: const Text(
+                            'Bạn có chắc chắn muốn đăng xuất?',
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx),
-                              child: const Text('Hủy', style: TextStyle(color: AppColors.textSecondary)),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                             TextButton(
-                              onPressed: () {
+                              onPressed: () async {
+                                final navigator = Navigator.of(context);
                                 Navigator.pop(ctx);
-                                Navigator.pushReplacementNamed(context, '/login');
+                                await AuthService().logout();
+                                if (!mounted) return;
+                                navigator.pushNamedAndRemoveUntil(
+                                  '/login',
+                                  (route) => false,
+                                );
                               },
-                              child: const Text('Đăng xuất', style: TextStyle(color: AppColors.error)),
+                              child: const Text(
+                                'Đăng xuất',
+                                style: TextStyle(color: AppColors.error),
+                              ),
                             ),
                           ],
                         ),

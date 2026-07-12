@@ -10,7 +10,10 @@ import java.util.List;
 
 @Repository
 public interface StudentFeeRepository extends JpaRepository<StudentFee, Integer> {
-    @Query("SELECT sf FROM StudentFee sf WHERE sf.studentId IN :studentIds AND sf.status = 'UNPAID'")
+    @Query("SELECT sf FROM StudentFee sf " +
+           "WHERE sf.studentId IN :studentIds " +
+           "AND sf.amount > sf.paidAmount " +
+           "AND sf.status <> 'PAID'")
     List<StudentFee> findUnpaidFeesForStudents(@Param("studentIds") List<Integer> studentIds);
     
     @Query("SELECT sf FROM StudentFee sf " +

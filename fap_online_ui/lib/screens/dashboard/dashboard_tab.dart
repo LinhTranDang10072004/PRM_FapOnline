@@ -8,8 +8,8 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/child_selector.dart';
 import '../../widgets/summary_card.dart';
-import '../../widgets/loading_skeleton.dart';
-import '../../widgets/empty_state.dart';
+import '../../models/response/notification_dto.dart';
+import '../../services/notification_service.dart';
 import '../notification/notification_detail_screen.dart';
 
 /// Tab Bảng điều khiển chính — hiển thị tổng quan cho phụ huynh.
@@ -23,39 +23,76 @@ class DashboardTab extends StatefulWidget {
 }
 
 class _DashboardTabState extends State<DashboardTab> {
+  final NotificationService _notificationService = NotificationService();
+  List<NotificationDTO> _notifications = <NotificationDTO>[];
   // ── Mock data ────────────────────────────────────────────────────────────
-  final List<ChildData> _children = const [
-    ChildData(studentId: 1, name: 'Nguyễn Văn B'),
-    ChildData(studentId: 2, name: 'Nguyễn Thị C'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
 
-  int _selectedChildId = 1;
+  Future<void> _loadNotifications() async {
+    final notifications = await _notificationService.getNotifications(size: 3);
+    if (!mounted) return;
+    setState(() => _notifications = notifications);
+  }
 
-  final List<_NotificationItem> _notifications = const [
-    _NotificationItem(
-      unread: true,
-      title: 'Lịch thi cuối kỳ đã cập nhật',
-      subtitle: 'Phòng đào tạo',
-      time: '2 giờ trước',
-    ),
-    _NotificationItem(
-      unread: true,
-      title: 'Điểm môn PRM301 đã công bố',
-      subtitle: 'Giảng viên Trần Văn D',
-      time: '5 giờ trước',
-    ),
-    _NotificationItem(
-      unread: false,
-      title: 'Thông báo đóng học phí HK2/2026',
-      subtitle: 'Phòng tài chính',
-      time: 'Hôm qua',
-    ),
-  ];
+  Future<void> _openNotification(NotificationDTO item) async {
+    if (!item.isRead) {
+      final wasMarked = await _notificationService.markAsRead(
+        item.notificationId,
+      );
+      if (wasMarked && mounted) {
+        setState(() {
+          _notifications = _notifications.map((notification) {
+            return notification.notificationId == item.notificationId
+                ? NotificationDTO(
+                    notificationId: notification.notificationId,
+                    title: notification.title,
+                    message: notification.message,
+                    sentAt: notification.sentAt,
+                    isRead: true,
+                  )
+                : notification;
+          }).toList();
+        });
+        context.read<DashboardProvider>().fetchDashboard();
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotificationDetailScreen(
+          title: item.title,
+          sender: 'Hệ thống',
+          time: _formatNotificationTime(item.sentAt),
+          message: item.message,
+        ),
+      ),
+    );
+  }
+
+  String _formatNotificationTime(String sentAt) {
+    final time = DateTime.tryParse(sentAt);
+    if (time == null) return sentAt;
+
+    final difference = DateTime.now().difference(time);
+    if (difference.inMinutes < 60) return '${difference.inMinutes} phút trước';
+    if (difference.inHours < 24) return '${difference.inHours} giờ trước';
+    if (difference.inDays == 1) return 'Hôm qua';
+    return '${difference.inDays} ngày trước';
+  }
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   Future<void> _onRefresh() async {
-    context.read<DashboardProvider>().fetchDashboard();
-    context.read<ParentChildProvider>().fetchChildren();
+    await Future.wait([
+      context.read<DashboardProvider>().fetchDashboard(),
+      context.read<ParentChildProvider>().fetchChildren(),
+      _loadNotifications(),
+    ]);
   }
 
   @override
@@ -70,10 +107,9 @@ class _DashboardTabState extends State<DashboardTab> {
       );
     }
 
-    final children = parentChildProvider.children.map((c) => ChildData(
-      studentId: c.studentId,
-      name: c.fullName,
-    )).toList();
+    final children = parentChildProvider.children
+        .map((c) => ChildData(studentId: c.studentId, name: c.fullName))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -94,7 +130,9 @@ class _DashboardTabState extends State<DashboardTab> {
                   const SizedBox(height: 4),
                   ChildSelector(
                     children: children,
-                    selectedId: parentChildProvider.selectedChildId ?? children.first.studentId,
+                    selectedId:
+                        parentChildProvider.selectedChildId ??
+                        children.first.studentId,
                     onSelected: (id) {
                       parentChildProvider.selectChild(id);
                     },
@@ -163,23 +201,29 @@ class _DashboardTabState extends State<DashboardTab> {
     final childProvider = context.watch<ParentChildProvider>();
     final selectedChildId = childProvider.selectedChildId;
     final data = context.read<DashboardProvider>().dashboardData;
-    
+
     // Filter data for selected child if available
     int todaySchedulesCount = 0;
     double totalUnpaid = 0;
     int recentGradesCount = 0;
-    
+
     if (data != null) {
       if (selectedChildId != null) {
         // Filter for selected child
-        todaySchedulesCount = data.todaySchedules.where((s) => s.studentId == null || s.studentId == selectedChildId).length;
-        
-        final childUnpaidFees = data.unpaidFees.where((f) => f.studentId == selectedChildId).toList();
+        todaySchedulesCount = data.todaySchedules
+            .where((s) => s.studentId == null || s.studentId == selectedChildId)
+            .length;
+
+        final childUnpaidFees = data.unpaidFees
+            .where((f) => f.studentId == selectedChildId)
+            .toList();
         for (var f in childUnpaidFees) {
           totalUnpaid += (f.amount - f.paidAmount);
         }
-        
-        recentGradesCount = data.recentGrades.where((g) => g.studentId == selectedChildId).length;
+
+        recentGradesCount = data.recentGrades
+            .where((g) => g.studentId == selectedChildId)
+            .length;
       } else {
         // Show all
         todaySchedulesCount = data.todaySchedules.length;
@@ -189,11 +233,16 @@ class _DashboardTabState extends State<DashboardTab> {
         recentGradesCount = data.recentGrades.length;
       }
     }
-    
+
     String unpaidDisplay = '0';
     if (totalUnpaid > 0) {
       unpaidDisplay = '${(totalUnpaid / 1000000).toStringAsFixed(1)}M';
     }
+
+    final attendanceTotal = data?.attendanceTotalCount ?? 0;
+    final attendanceDisplay = attendanceTotal == 0
+        ? '0%'
+        : '${((data!.attendancePresentCount / attendanceTotal) * 100).round()}%';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -219,7 +268,7 @@ class _DashboardTabState extends State<DashboardTab> {
             iconColor: AppColors.success,
             iconBgColor: AppColors.success.withOpacity(0.1),
             title: 'Tỷ lệ điểm danh',
-            value: '---', // Not in dashboard API yet
+            value: attendanceDisplay,
             subtitle: 'Học kỳ này',
           ),
           SummaryCard(
@@ -261,10 +310,7 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
             child: const Text(
               'Xem tất cả',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -273,6 +319,13 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildNotificationList() {
+    if (_notifications.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Center(child: Text('Chưa có thông báo mới')),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -284,22 +337,13 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
             child: AppCard(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => NotificationDetailScreen(
-                      title: item.title,
-                      sender: item.subtitle,
-                      time: item.time,
-                    ),
-                  ),
-                );
+                _openNotification(item);
               },
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               child: Row(
                 children: [
                   // Unread dot
-                  if (item.unread)
+                  if (!item.isRead)
                     Container(
                       width: 8,
                       height: 8,
@@ -320,22 +364,18 @@ class _DashboardTabState extends State<DashboardTab> {
                         Text(
                           item.title,
                           style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight:
-                                item.unread ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: !item.isRead
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          item.subtitle,
-                          style: AppTextStyles.caption,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        const Text('Hệ thống', style: AppTextStyles.caption),
                         const SizedBox(height: 2),
                         Text(
-                          item.time,
+                          _formatNotificationTime(item.sentAt),
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.textHint,
                             fontSize: 11,
@@ -364,17 +404,3 @@ class _DashboardTabState extends State<DashboardTab> {
 }
 
 // ── Data model cho mock notification ─────────────────────────────────────────
-
-class _NotificationItem {
-  final bool unread;
-  final String title;
-  final String subtitle;
-  final String time;
-
-  const _NotificationItem({
-    required this.unread,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-  });
-}
