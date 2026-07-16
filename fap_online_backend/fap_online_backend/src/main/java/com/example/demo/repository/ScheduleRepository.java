@@ -12,18 +12,22 @@ import java.util.List;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
     @Query("SELECT DISTINCT s FROM Schedule s " +
-           "JOIN ClassStudent cs ON s.classId = cs.classId " +
-           "WHERE cs.studentId IN :studentIds AND s.scheduleDate = :today " +
-           "ORDER BY s.timeSlotId ASC")
+            "JOIN ClassStudent cs ON s.classId = cs.classId " +
+            "WHERE cs.studentId IN :studentIds AND s.scheduleDate = :today " +
+            "ORDER BY s.timeSlotId ASC")
     List<Schedule> findTodaySchedulesForStudents(@Param("studentIds") List<Integer> studentIds, @Param("today") LocalDate today);
 
     @Query("SELECT DISTINCT s FROM Schedule s " +
-           "JOIN ClassStudent cs ON s.classId = cs.classId " +
-           "WHERE cs.studentId IN :studentIds AND s.scheduleDate >= :startDate AND s.scheduleDate <= :endDate " +
-           "ORDER BY s.scheduleDate ASC, s.timeSlotId ASC")
+            "JOIN ClassStudent cs ON s.classId = cs.classId " +
+            "WHERE cs.studentId IN :studentIds AND s.scheduleDate >= :startDate AND s.scheduleDate <= :endDate " +
+            "ORDER BY s.scheduleDate ASC, s.timeSlotId ASC")
     List<Schedule> findWeeklySchedulesForStudents(@Param("studentIds") List<Integer> studentIds, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     boolean existsByRoomId(Integer roomId);
 
     boolean existsByTimeSlotId(Integer timeSlotId);
+
+    List<Schedule> findByClassId(Integer classId);
+
+    List<Schedule> findByClassIdIn(List<Integer> classIds);
 }
