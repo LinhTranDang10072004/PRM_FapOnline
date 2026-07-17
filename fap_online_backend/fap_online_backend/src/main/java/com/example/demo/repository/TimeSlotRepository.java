@@ -5,4 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface TimeSlotRepository extends JpaRepository<TimeSlot, Integer> {}
+public interface TimeSlotRepository extends JpaRepository<TimeSlot, Integer> {
+    boolean existsBySlotCode(String slotCode);
+    boolean existsBySlotCodeAndTimeSlotIdNot(String slotCode, Integer timeSlotId);
+}

@@ -1,31 +1,38 @@
 package com.example.demo.security;
 
+import com.example.demo.entity.Role;
+import com.example.demo.entity.UserRole;
+import com.example.demo.repository.RoleRepository;
+import com.example.demo.repository.UserRoleRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import com.example.demo.repository.ParentRepository;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
-	private final ParentRepository parentRepository;
+	private final UserRoleRepository userRoleRepository;
+	private final RoleRepository roleRepository;
 
-	public JwtAuthenticationFilter(JwtService jwtService, ParentRepository parentRepository) {
+	public JwtAuthenticationFilter(JwtService jwtService, UserRoleRepository userRoleRepository, RoleRepository roleRepository) {
 		this.jwtService = jwtService;
-		this.parentRepository = parentRepository;
+		this.userRoleRepository = userRoleRepository;
+		this.roleRepository = roleRepository;
 	}
 
 	@Override
@@ -38,10 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			JwtService.TokenData tokenData = jwtService.parseToken(token);
 
 			if (tokenData != null && tokenData.getUserId() != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-				List<SimpleGrantedAuthority> authorities = Collections.emptyList();
-				if (parentRepository.findByUserId(tokenData.getUserId()).isPresent()) {
-					authorities = List.of(new SimpleGrantedAuthority("ROLE_PARENT"));
-				}
+				List<GrantedAuthority> authorities = resolveAuthorities(tokenData.getUserId());
+
 				Authentication authentication = new UsernamePasswordAuthenticationToken(
 						tokenData.getUserId().toString(),
 						null,
@@ -54,5 +59,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 
 		filterChain.doFilter(request, response);
+	}
+
+
+	private List<GrantedAuthority> resolveAuthorities(Integer userId) {
+		List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+		if (userRoles.isEmpty()) {
+			return List.of();
+		}
+
+		List<Integer> roleIds = userRoles.stream()
+				.map(UserRole::getRoleId)
+				.distinct()
+				.collect(Collectors.toList());
+
+		Map<Integer, Role> roleMap = roleRepository.findAllById(roleIds)
+				.stream()
+				.collect(Collectors.toMap(Role::getRoleId, r -> r));
+
+		return roleIds.stream()
+				.map(roleMap::get)
+				.filter(role -> role != null && Boolean.TRUE.equals(role.getIsActive()))
+				.map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role.getRoleName().toUpperCase()))
+				.collect(Collectors.toList());
 	}
 }
