@@ -14,16 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * UC-18: Process Application
- * Staff xem danh sách đơn từ của sinh viên, duyệt hoặc từ chối.
- *
- * Luồng chính:
- *  1. GET  /api/staff/applications?status=Pending   → xem danh sách đơn chờ
- *  2. GET  /api/staff/applications/{id}             → xem chi tiết đơn
- *  3+4+5. PUT /api/staff/applications/{id}/approve  → duyệt đơn
- *  3+4+5. PUT /api/staff/applications/{id}/reject   → từ chối đơn (bắt buộc processNote)
- */
+
 @RestController
 @RequestMapping("/api/staff/applications")
 @RequiredArgsConstructor
@@ -33,27 +24,16 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
 
-    /**
-     * Bước 1 (luồng chính): Staff xem danh sách đơn.
-     * Query param ?status=Pending  → chỉ lấy đơn đang chờ xử lý.
-     * Không truyền status          → lấy toàn bộ đơn.
-     */
+
     @GetMapping
     @Operation(
-            summary = "Danh sách đơn từ",
-            description = "Lọc theo trạng thái (status). Ví dụ: ?status=Pending để xem đơn chờ xử lý. " +
-                          "Bỏ trống để xem tất cả. Trạng thái hợp lệ: Pending, Approved, Rejected, Cancelled."
-    )
+            summary = "Danh sách đơn từ")
     public ResponseEntity<List<ApplicationDTO>> getApplications(
             @Parameter(description = "Lọc theo trạng thái: Pending | Approved | Rejected | Cancelled")
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(applicationService.getApplications(status));
     }
 
-    /**
-     * Bước 2 (luồng chính): Staff xem chi tiết một đơn.
-     * Hiển thị: loại đơn, nội dung, file đính kèm, thông tin sinh viên.
-     */
     @GetMapping("/{applicationId}")
     @Operation(
             summary = "Chi tiết đơn từ",
@@ -63,13 +43,7 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getApplicationById(applicationId));
     }
 
-    /**
-     * Bước 3–5 (luồng chính): Staff duyệt đơn.
-     * BR-A: Chỉ đơn Pending mới được xử lý.
-     * BR-D: Mỗi đơn chỉ xử lý một lần.
-     * BR-E: Hệ thống tự lưu processedBy (từ JWT) + processedAt (thời gian hiện tại).
-     * processNote là tùy chọn khi approve.
-     */
+  
     @PutMapping("/{applicationId}/approve")
     @Operation(
             summary = "Duyệt đơn (Approve)",
@@ -83,13 +57,7 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.approveApplication(applicationId, request));
     }
 
-    /**
-     * Bước 3–5 (luồng chính): Staff từ chối đơn.
-     * BR-A: Chỉ đơn Pending mới được xử lý.
-     * BR-B: Bắt buộc phải có lý do (processNote không được trống).
-     * BR-D: Mỗi đơn chỉ xử lý một lần.
-     * BR-E: Hệ thống tự lưu processedBy (từ JWT) + processedAt.
-     */
+   
     @PutMapping("/{applicationId}/reject")
     @Operation(
             summary = "Từ chối đơn (Reject)",

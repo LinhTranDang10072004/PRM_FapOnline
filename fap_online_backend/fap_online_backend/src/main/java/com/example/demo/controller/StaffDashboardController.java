@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/staff/dashboard")
 @RequiredArgsConstructor
-@Tag(name = "Staff - Dashboard", description = "UC-12: Tổng quan học vụ dành cho Staff")
+@Tag(name = "Staff - Dashboard")
 @PreAuthorize("hasRole('STAFF')")
 public class StaffDashboardController {
 

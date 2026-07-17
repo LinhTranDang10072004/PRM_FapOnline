@@ -36,4 +36,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Integer>
     boolean existsByScheduleIdIn(List<Integer> scheduleIds);
 
     boolean existsByStudentIdAndScheduleIdIn(Integer studentId, List<Integer> scheduleIds);
+
+    boolean existsByScheduleId(Integer scheduleId);
 }
