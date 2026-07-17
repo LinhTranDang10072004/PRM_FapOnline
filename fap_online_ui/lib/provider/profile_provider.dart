@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import '../models/response/profile_dto.dart';
 import '../services/profile_service.dart';
 
 class ProfileProvider extends ChangeNotifier {
   final ProfileService _service = ProfileService();
-  
+
   // Expose service for direct access if needed
   ProfileService get profileService => _service;
 
@@ -49,13 +50,35 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> uploadAvatar(String filePath) async {
+  Future<String?> uploadAvatar(Uint8List bytes, String filename) async {
     try {
-      return await _service.uploadAvatar(filePath);
+      final avatarUrl = await _service.uploadAvatar(bytes, filename);
+      return avatarUrl;
     } catch (e) {
       _error = 'Lỗi tải ảnh: $e';
       notifyListeners();
       return null;
     }
+  }
+
+  Future<bool> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _error = null;
+    notifyListeners();
+
+    final success = await _service.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    );
+    if (!success) {
+      _error =
+          'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.';
+      notifyListeners();
+    }
+    return success;
   }
 }

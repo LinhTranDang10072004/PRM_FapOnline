@@ -270,9 +270,9 @@ public class DataSeeder implements CommandLineRunner {
         ClassGradeComponent swd_assign = saveClassGradeComponent(classSWD_A.getClassId(), gcAssignment.getGradeComponentId(), new BigDecimal("20.00"));
         ClassGradeComponent swd_fe = saveClassGradeComponent(classSWD_A.getClassId(), gcFinalExam.getGradeComponentId(), new BigDecimal("60.00"));
 
-        // --- Schedules: Current Week (July 2026) for Testing ---
-        // Today is July 11, 2026 (Friday). Monday of this week is July 7, 2026
-        LocalDate currentWeekMonday = LocalDate.of(2026, 7, 7); // Monday of current week for testing
+        // --- Schedules: Current Week for Testing ---
+        // Use the real current week so the dashboard always has data today.
+        LocalDate currentWeekMonday = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
         
         // Current week schedules
         Schedule currentWeekPRM_Mon = saveSchedule(classPRM_A.getClassId(), de205.getRoomId(), slot1.getTimeSlotId(),
@@ -289,12 +289,21 @@ public class DataSeeder implements CommandLineRunner {
                 currentWeekMonday, adminUser.getUserId(), now); // Monday
         Schedule currentWeekSWD_Fri = saveSchedule(classSWD_A.getClassId(), de407.getRoomId(), slot3.getTimeSlotId(),
                 currentWeekMonday.plusDays(4), adminUser.getUserId(), now); // Friday
+
+        // Each seeded parent account has at least one class shown on the
+        // dashboard for the current day, regardless of which day it is seeded.
+        Schedule dashboardTodayPRM = saveSchedule(classPRM_A.getClassId(), de205.getRoomId(), slot1.getTimeSlotId(),
+                LocalDate.now(), adminUser.getUserId(), now);
+        Schedule dashboardTodaySWP = saveSchedule(classSWP_A.getClassId(), de301.getRoomId(), slot2.getTimeSlotId(),
+                LocalDate.now(), adminUser.getUserId(), now);
         
         // Add current week attendance (for testing date range picker)
         saveAttendance(currentWeekPRM_Mon.getScheduleId(), student1.getStudentId(), "PRESENT", teacher1.getTeacherId(), now);
         saveAttendance(currentWeekPRM_Wed.getScheduleId(), student1.getStudentId(), "PRESENT", teacher1.getTeacherId(), now);
         saveAttendance(currentWeekSWP_Tue.getScheduleId(), student1.getStudentId(), "PRESENT", teacher2.getTeacherId(), now);
         saveAttendance(currentWeekSWP_Thu.getScheduleId(), student1.getStudentId(), "PRESENT", teacher2.getTeacherId(), now);
+        saveAttendance(dashboardTodayPRM.getScheduleId(), student1.getStudentId(), "PRESENT", teacher1.getTeacherId(), now);
+        saveAttendance(dashboardTodaySWP.getScheduleId(), student1.getStudentId(), "PRESENT", teacher2.getTeacherId(), now);
 
         // --- Schedules: PRM392 Mon & Wed Slot 1 (September 2026) ---
         LocalDate weekStart = LocalDate.of(2026, 9, 7); // First Monday of semester

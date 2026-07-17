@@ -1,4 +1,5 @@
 import '../config/api_endpoints.dart';
+import 'dart:typed_data';
 import '../models/response/profile_dto.dart';
 import 'api_service.dart';
 
@@ -28,16 +29,37 @@ class ProfileService {
     }
   }
 
-  Future<String?> uploadAvatar(String filePath) async {
+  Future<bool> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
     try {
-      final response = await _apiService.uploadFile('/files/upload', filePath);
-      if (response != null && response['url'] != null) {
-        return response['url'];
-      }
-      return null;
+      await _apiService.put(
+        ApiEndpoints.changePassword,
+        body: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+      return true;
     } catch (e) {
-      print('Error uploading avatar: $e');
-      return null;
+      print('Error changing password: $e');
+      return false;
     }
+  }
+
+  Future<String> uploadAvatar(Uint8List bytes, String filename) async {
+    final response = await _apiService.uploadBytes(
+      '/files/upload',
+      bytes,
+      filename,
+    );
+    final url = response is Map ? response['url'] as String? : null;
+    if (url == null || url.isEmpty) {
+      throw ApiException('Máy chủ không trả về đường dẫn ảnh.', 0);
+    }
+    return url;
   }
 }

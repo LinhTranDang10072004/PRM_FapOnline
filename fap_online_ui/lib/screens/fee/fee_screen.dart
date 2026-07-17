@@ -22,18 +22,25 @@ class _FeeScreenState extends State<FeeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final childProvider = context.read<ParentChildProvider>();
-      if (childProvider.children.isNotEmpty && _selectedChildId == null) {
-        _selectedChildId = childProvider.children.first.studentId;
-        _fetchFees();
-      }
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Populate the default child filter when asynchronous child data arrives.
+    final children = context.read<ParentChildProvider>().children;
+    if (_selectedChildId == null && children.isNotEmpty) {
+      _selectedChildId = children.first.studentId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchFees();
+      });
+    }
   }
 
   void _fetchFees() {
     if (_selectedChildId == null) return;
-    
+
     final provider = context.read<StudentFeeProvider>();
     if (_selectedSemesterId != null) {
       provider.fetchFeesBySemester(_selectedChildId!, _selectedSemesterId!);
@@ -82,13 +89,18 @@ class _FeeScreenState extends State<FeeScreen> {
           elevation: 0,
           centerTitle: true,
         ),
-        body: const Center(
-          child: Text('Chưa có dữ liệu học sinh'),
-        ),
+        body: const Center(child: Text('Chưa có dữ liệu học sinh')),
       );
     }
 
-    _selectedChildId ??= childProvider.children.first.studentId;
+    // Fallback for a provider update that rebuilds this screen without
+    // invoking didChangeDependencies.
+    if (_selectedChildId == null) {
+      _selectedChildId = childProvider.children.first.studentId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchFees();
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -103,14 +115,16 @@ class _FeeScreenState extends State<FeeScreen> {
           if (childProvider.children.length > 1)
             ChildSelector(
               children: childProvider.children
-                  .map((c) => ChildData(studentId: c.studentId, name: c.fullName))
+                  .map(
+                    (c) => ChildData(studentId: c.studentId, name: c.fullName),
+                  )
                   .toList(),
               selectedId: _selectedChildId!,
               onSelected: _onChildSelected,
             ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Semester Filter
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -132,11 +146,15 @@ class _FeeScreenState extends State<FeeScreen> {
                       ),
                       const DropdownMenuItem(
                         value: 1,
-                        child: Text('Học kỳ 1'),
+                        child: Text('Spring 2026'),
                       ),
                       const DropdownMenuItem(
                         value: 2,
-                        child: Text('Học kỳ 2'),
+                        child: Text('Summer 2026'),
+                      ),
+                      const DropdownMenuItem(
+                        value: 3,
+                        child: Text('Fall 2026'),
                       ),
                     ],
                   ),
@@ -144,13 +162,11 @@ class _FeeScreenState extends State<FeeScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
 
           if (feeProvider.isLoading)
-            const Expanded(
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const Expanded(child: Center(child: CircularProgressIndicator()))
           else if (feeProvider.error != null)
             Expanded(
               child: Center(
@@ -166,7 +182,9 @@ class _FeeScreenState extends State<FeeScreen> {
               child: Center(
                 child: Text(
                   'Không có dữ liệu học phí',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             )
@@ -181,7 +199,10 @@ class _FeeScreenState extends State<FeeScreen> {
                       children: [
                         Row(
                           children: [
-                            const Text('Tổng học phí', style: AppTextStyles.body),
+                            const Text(
+                              'Tổng học phí',
+                              style: AppTextStyles.body,
+                            ),
                             const Spacer(),
                             Text(
                               feeProvider.feesList
@@ -194,13 +215,18 @@ class _FeeScreenState extends State<FeeScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Text('Đã thanh toán', style: AppTextStyles.body),
+                            const Text(
+                              'Đã thanh toán',
+                              style: AppTextStyles.body,
+                            ),
                             const Spacer(),
                             Text(
                               feeProvider.feesList
                                   .fold(0.0, (sum, fee) => sum + fee.paidAmount)
                                   .toStringAsFixed(0),
-                              style: AppTextStyles.h3.copyWith(color: AppColors.success),
+                              style: AppTextStyles.h3.copyWith(
+                                color: AppColors.success,
+                              ),
                             ),
                           ],
                         ),
@@ -218,17 +244,20 @@ class _FeeScreenState extends State<FeeScreen> {
                             ),
                             const Spacer(),
                             Text(
-                              (feeProvider.totalUnpaidAmount ?? 0).toStringAsFixed(0),
-                              style: AppTextStyles.h2.copyWith(color: AppColors.error),
+                              (feeProvider.totalUnpaidAmount ?? 0)
+                                  .toStringAsFixed(0),
+                              style: AppTextStyles.h2.copyWith(
+                                color: AppColors.error,
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Fees List
                   ...feeProvider.feesList.map((fee) {
                     return Padding(
@@ -279,9 +308,9 @@ class _FeeScreenState extends State<FeeScreen> {
                       ),
                     );
                   }),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -291,7 +320,11 @@ class _FeeScreenState extends State<FeeScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -304,7 +337,7 @@ class _FeeScreenState extends State<FeeScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
                 ],
               ),

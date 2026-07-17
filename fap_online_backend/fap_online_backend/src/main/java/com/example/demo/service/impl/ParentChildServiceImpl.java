@@ -6,6 +6,7 @@ import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.*;
 import com.example.demo.service.ParentChildService;
 import com.example.demo.service.ParentValidationService;
+import com.example.demo.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.example.demo.util.SecurityUtils;
@@ -37,6 +38,7 @@ public class ParentChildServiceImpl implements ParentChildService {
     private final GradeComponentRepository gradeComponentRepository;
     private final FeeTypeRepository feeTypeRepository;
     private final FinalGradeRepository finalGradeRepository;
+    private final AttendanceService attendanceService;
 
     private final ParentValidationService parentValidationService;
 
@@ -103,11 +105,11 @@ public class ParentChildServiceImpl implements ParentChildService {
 
     @Override
     public List<AttendanceReportDTO> getChildAttendance(Integer studentId, Integer subjectId, Integer semesterId) {
-        Integer userId = SecurityUtils.extractUserId();
         parentValidationService.validateParentOwnsStudent(studentId);
-        // Assuming Attendance is tied to Schedule. We lack an explicit AttendanceRepository in the basic prompt,
-        // so returning an empty list or mock list as the BRD requires it but entities were partially provided.
-        return Collections.emptyList();
+        return attendanceService.getAttendanceReport(
+                studentId,
+                LocalDate.of(2000, 1, 1),
+                LocalDate.now());
     }
 
     @Override
@@ -115,9 +117,10 @@ public class ParentChildServiceImpl implements ParentChildService {
         Integer userId = SecurityUtils.extractUserId();
         parentValidationService.validateParentOwnsStudent(studentId);
         
-        // Fetch all grades for this student (using a large page or custom method)
-        // Since we only have findRecentGradesForStudents, we'll reuse it with a large limit
-        List<StudentGrade> grades = studentGradeRepository.findRecentGradesForStudents(List.of(studentId), org.springframework.data.domain.PageRequest.of(0, 100));
+        List<StudentGrade> grades = semesterId == null
+                ? studentGradeRepository.findRecentGradesForStudents(
+                        List.of(studentId), org.springframework.data.domain.PageRequest.of(0, 100))
+                : studentGradeRepository.findBySemester(studentId, semesterId);
         
         return grades.stream().map(g -> {
             SchoolClass schoolClass = schoolClassRepository.findById(g.getClassId()).orElse(null);
@@ -160,7 +163,12 @@ public class ParentChildServiceImpl implements ParentChildService {
     public List<FeeDTO> getChildFees(Integer studentId, Integer semesterId) {
         Integer userId = SecurityUtils.extractUserId();
         parentValidationService.validateParentOwnsStudent(studentId);
-        List<StudentFee> fees = studentFeeRepository.findUnpaidFeesForStudents(List.of(studentId));
+        List<StudentFee> fees = studentFeeRepository.findByStudentId(studentId);
+        if (semesterId != null) {
+            fees = fees.stream()
+                    .filter(fee -> semesterId.equals(fee.getSemesterId()))
+                    .collect(Collectors.toList());
+        }
         
         return fees.stream().map(fee -> {
             FeeType feeType = feeTypeRepository.findById(fee.getFeeTypeId()).orElse(null);

@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.AttendanceReportDTO;
 import com.example.demo.service.AttendanceService;
+import com.example.demo.service.ParentValidationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class AttendanceController {
     
     private final AttendanceService attendanceService;
+    private final ParentValidationService parentValidationService;
     
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<AttendanceReportDTO>> getStudentAttendance(
@@ -27,6 +29,7 @@ public class AttendanceController {
         @RequestParam LocalDate startDate,
         @RequestParam LocalDate endDate
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             attendanceService.getAttendanceReport(
                 studentId, startDate, endDate
@@ -40,6 +43,7 @@ public class AttendanceController {
         @RequestParam Integer month,
         @RequestParam Integer year
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             attendanceService.getMonthlyAttendance(studentId, month, year)
         );
@@ -49,6 +53,7 @@ public class AttendanceController {
     public ResponseEntity<Map<String, Long>> getAttendanceStats(
         @PathVariable Integer studentId
     ) {
+        parentValidationService.validateParentOwnsStudent(studentId);
         return ResponseEntity.ok(
             attendanceService.getAttendanceStats(studentId)
         );

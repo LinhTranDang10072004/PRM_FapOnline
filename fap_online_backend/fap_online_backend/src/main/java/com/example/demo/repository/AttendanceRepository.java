@@ -10,6 +10,8 @@ import java.util.List;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Integer> {
 
+    List<Attendance> findByStudentIdIn(List<Integer> studentIds);
+    
     @Query("SELECT a FROM Attendance a " +
             "WHERE a.studentId = :studentId " +
             "AND a.markedAt >= :startDate " +

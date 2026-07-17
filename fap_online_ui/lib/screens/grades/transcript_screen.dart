@@ -21,18 +21,26 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final childProvider = context.read<ParentChildProvider>();
-      if (childProvider.children.isNotEmpty && _selectedChildId == null) {
-        _selectedChildId = childProvider.children.first.studentId;
-        _fetchTranscript();
-      }
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // The child filter is populated after the provider finishes loading.
+    // Fetch immediately once its default value exists.
+    final children = context.read<ParentChildProvider>().children;
+    if (_selectedChildId == null && children.isNotEmpty) {
+      _selectedChildId = children.first.studentId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchTranscript();
+      });
+    }
   }
 
   void _fetchTranscript() {
     if (_selectedChildId == null) return;
-    
+
     final provider = context.read<TranscriptProvider>();
     if (_selectedSemesterId != null) {
       provider.fetchSemesterTranscript(_selectedChildId!, _selectedSemesterId!);
@@ -61,13 +69,18 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
           elevation: 0,
           centerTitle: true,
         ),
-        body: const Center(
-          child: Text('Chưa có dữ liệu học sinh'),
-        ),
+        body: const Center(child: Text('Chưa có dữ liệu học sinh')),
       );
     }
 
-    _selectedChildId ??= childProvider.children.first.studentId;
+    // Fallback for a provider update that rebuilds this screen without
+    // invoking didChangeDependencies.
+    if (_selectedChildId == null) {
+      _selectedChildId = childProvider.children.first.studentId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchTranscript();
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -82,14 +95,16 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
           if (childProvider.children.length > 1)
             ChildSelector(
               children: childProvider.children
-                  .map((c) => ChildData(studentId: c.studentId, name: c.fullName))
+                  .map(
+                    (c) => ChildData(studentId: c.studentId, name: c.fullName),
+                  )
                   .toList(),
               selectedId: _selectedChildId!,
               onSelected: _onChildSelected,
             ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Semester Filter
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -111,11 +126,15 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                       ),
                       const DropdownMenuItem(
                         value: 1,
-                        child: Text('Học kỳ 1'),
+                        child: Text('Spring 2026'),
                       ),
                       const DropdownMenuItem(
                         value: 2,
-                        child: Text('Học kỳ 2'),
+                        child: Text('Summer 2026'),
+                      ),
+                      const DropdownMenuItem(
+                        value: 3,
+                        child: Text('Fall 2026'),
                       ),
                     ],
                   ),
@@ -123,11 +142,12 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Average Score
-          if (transcriptProvider.averageScore != null && _selectedSemesterId == null)
+          if (transcriptProvider.averageScore != null &&
+              _selectedSemesterId == null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: AppCard(
@@ -137,20 +157,20 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                     const Text('Điểm trung bình:', style: AppTextStyles.body),
                     Text(
                       transcriptProvider.averageScore!.toStringAsFixed(2),
-                      style: AppTextStyles.h2.copyWith(color: AppColors.primary),
+                      style: AppTextStyles.h2.copyWith(
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 12),
 
           // Transcript List
           if (transcriptProvider.isLoading)
-            const Expanded(
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const Expanded(child: Center(child: CircularProgressIndicator()))
           else if (transcriptProvider.error != null)
             Expanded(
               child: Center(
@@ -166,7 +186,9 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
               child: Center(
                 child: Text(
                   'Không có dữ liệu bảng điểm',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             )
@@ -191,7 +213,10 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Center(
-                              child: Icon(Icons.menu_book, color: AppColors.primary),
+                              child: Icon(
+                                Icons.menu_book,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
