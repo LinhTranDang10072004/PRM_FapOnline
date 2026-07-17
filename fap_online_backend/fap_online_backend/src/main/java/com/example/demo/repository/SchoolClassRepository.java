@@ -12,4 +12,10 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Intege
     boolean existsByClassCodeAndClassIdNot(String classCode, Integer classId);
     List<SchoolClass> findByMainTeacherId(Integer teacherId);
     List<SchoolClass> findBySemesterId(Integer semesterId);
-}
+
+    /** UC-12: Đếm lớp có giáo viên được phân công */
+    long countByMainTeacherIdIsNotNull();
+
+    /** UC-12: Đếm lớp KHÔNG thuộc các trạng thái kết thúc (Cancelled, Completed) */
+    long countByStatusNotIn(List<String> excludedStatuses);
+}
