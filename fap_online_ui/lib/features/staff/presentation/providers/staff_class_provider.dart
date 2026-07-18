@@ -9,6 +9,10 @@ class StaffClassProvider extends ChangeNotifier {
   ClassModel? _selectedClass;
   List<ClassStudentModel> _students = [];
 
+  // References
+  List<TeacherModel> _allTeachers = [];
+  List<StudentModel> _allStudents = [];
+
   bool _isLoading = false;
   bool _isStudentsLoading = false;
   String? _error;
@@ -19,6 +23,19 @@ class StaffClassProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isStudentsLoading => _isStudentsLoading;
   String? get error => _error;
+
+  List<TeacherModel> get allTeachers => _allTeachers;
+  List<StudentModel> get allStudents => _allStudents;
+
+  Future<void> loadReferences() async {
+    try {
+      _allTeachers = await _service.getTeachers();
+      _allStudents = await _service.getStudents();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load references: $e');
+    }
+  }
 
   Future<void> loadClasses({int? semesterId}) async {
     _isLoading = true;

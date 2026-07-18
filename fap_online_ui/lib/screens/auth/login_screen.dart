@@ -5,6 +5,9 @@ import '../../provider/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_shadows.dart';
+import '../../services/api_service.dart';
+import '../../config/api_endpoints.dart';
+import '../../utils/preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -60,10 +64,20 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (!mounted) return;
 
-    setState(() => _isLoading = false);
-
     if (success) {
-      Navigator.pushReplacementNamed(context, '/parent-shell');
+      final role = await PreferencesHelper.getRole();
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      if (role == 'ROLE_STAFF' || role == 'STAFF' || role == 'Staff') {
+        Navigator.pushReplacementNamed(context, '/staff-shell');
+      } else {
+        // Fallback for parent or other roles
+        Navigator.pushReplacementNamed(context, '/parent-shell');
+      }
+    } else {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -487,13 +501,7 @@ class _LoginScreenState extends State<LoginScreen>
 
             // ── Footer note ───────────────────────────────────────────
             Center(
-              child: Text(
-                'Dành cho phụ huynh học sinh',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textHint,
-                  fontSize: 12,
-                ),
-              ),
+
             ),
           ],
         ),

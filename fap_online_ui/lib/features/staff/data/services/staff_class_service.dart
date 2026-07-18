@@ -52,7 +52,10 @@ class StaffClassService {
     return ClassModel.fromJson(data as Map<String, dynamic>);
   }
 
-  /// UC-14: GET /api/staff/classes/{classId}/students
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UC-14: Add/Remove Student from Class
+  // ─────────────────────────────────────────────────────────────────────────────
+
   Future<List<ClassStudentModel>> getClassStudents(int classId) async {
     final data = await _api.get(ApiEndpoints.staffClassStudents(classId));
     return (data as List<dynamic>)
@@ -60,17 +63,34 @@ class StaffClassService {
         .toList();
   }
 
-  /// UC-14: POST /api/staff/classes/{classId}/students
-  Future<ClassStudentModel> addStudentToClass(int classId, int studentId) async {
+  Future<ClassStudentModel> addStudentToClass(
+      int classId, int studentId) async {
     final data = await _api.post(
       ApiEndpoints.staffClassStudents(classId),
-      AddStudentToClassRequest(studentId: studentId).toJson(),
+      {'studentId': studentId},
     );
     return ClassStudentModel.fromJson(data as Map<String, dynamic>);
   }
 
-  /// UC-14: DELETE /api/staff/classes/{classId}/students/{studentId}
   Future<void> removeStudentFromClass(int classId, int studentId) async {
     await _api.delete(ApiEndpoints.staffClassStudent(classId, studentId));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // References
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  Future<List<TeacherModel>> getTeachers() async {
+    final data = await _api.get(ApiEndpoints.staffReferenceTeachers);
+    return (data as List<dynamic>)
+        .map((e) => TeacherModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<StudentModel>> getStudents() async {
+    final data = await _api.get(ApiEndpoints.staffReferenceStudents);
+    return (data as List<dynamic>)
+        .map((e) => StudentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

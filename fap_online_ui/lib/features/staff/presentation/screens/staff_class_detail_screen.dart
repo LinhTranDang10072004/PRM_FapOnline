@@ -23,7 +23,9 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StaffClassProvider>().loadClassDetail(widget.classId);
+      final provider = context.read<StaffClassProvider>();
+      provider.loadClassDetail(widget.classId);
+      provider.loadReferences();
     });
   }
 
@@ -164,21 +166,36 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
   }
 
   void _showAssignTeacherDialog(BuildContext context, ClassModel cls) {
-    final teacherCtrl = TextEditingController(
-        text: cls.teacherId?.toString() ?? '');
+    final formKey = GlobalKey<FormState>();
+    int? selectedTeacherId = cls.teacherId;
+    final allTeachers = context.read<StaffClassProvider>().allTeachers;
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Phân công Giáo viên',
             style: TextStyle(fontWeight: FontWeight.w700)),
-        content: TextField(
-          controller: teacherCtrl,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'ID Giáo viên',
-            hintText: 'Nhập teacher ID',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        content: Form(
+          key: formKey,
+          child: DropdownButtonFormField<int>(
+            value: allTeachers.any((t) => t.teacherId == selectedTeacherId)
+                ? selectedTeacherId
+                : null,
+            decoration: InputDecoration(
+              labelText: 'Chọn Giáo viên',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            items: allTeachers.map((t) {
+              return DropdownMenuItem<int>(
+                value: t.teacherId,
+                child: Text('[${t.teacherCode}] ${t.fullName}'),
+              );
+            }).toList(),
+            onChanged: (val) {
+              selectedTeacherId = val;
+            },
+            validator: (v) => v == null ? 'Vui lòng chọn giáo viên' : null,
           ),
         ),
         actions: [
@@ -187,10 +204,10 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
               child: const Text('Hủy')),
           FilledButton(
             onPressed: () async {
-              final tid = int.tryParse(teacherCtrl.text);
-              if (tid == null) return;
+              if (!formKey.currentState!.validate()) return;
+              if (selectedTeacherId == null) return;
               final provider = context.read<StaffClassProvider>();
-              final ok = await provider.assignTeacher(cls.classId!, tid);
+              final ok = await provider.assignTeacher(cls.classId!, selectedTeacherId!);
               if (!context.mounted) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -408,30 +425,58 @@ class _StudentsTab extends StatelessWidget {
   }
 
   void _showAddStudentDialog(BuildContext context) {
-    final ctrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    int? selectedStudentId;
+    final provider = context.read<StaffClassProvider>();
+    final allStudents = provider.allStudents;
+    final availableStudents = allStudents
+        .where((s) => !students.any((cs) => cs.studentId == s.studentId))
+        .toList();
+
+    String? errorText;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Thêm Sinh viên',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'ID Sinh viên',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Thêm Sinh viên',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+            content: Form(
+              key: formKey,
+              child: DropdownMenu<int>(
+                enableFilter: true,
+                enableSearch: true,
+                width: 250,
+                menuHeight: 300,
+                label: const Text('Tìm / Chọn Sinh viên'),
+                errorText: errorText,
+                dropdownMenuEntries: availableStudents.map((s) {
+                  return DropdownMenuEntry<int>(
+                    value: s.studentId,
+                    label: '[${s.studentCode}] ${s.fullName}',
+                  );
+                }).toList(),
+                onSelected: (val) {
+                  setState(() {
+                    selectedStudentId = val;
+                    errorText = null;
+                  });
+                },
+              ),
+            ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Hủy')),
           FilledButton(
             onPressed: () async {
-              final sid = int.tryParse(ctrl.text);
-              if (sid == null) return;
+              if (selectedStudentId == null) {
+                setState(() => errorText = 'Vui lòng chọn sinh viên');
+                return;
+              }
               final provider = context.read<StaffClassProvider>();
-              final ok = await provider.addStudentToClass(classId, sid);
+              final ok = await provider.addStudentToClass(classId, selectedStudentId!);
               if (!context.mounted) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -443,8 +488,8 @@ class _StudentsTab extends StatelessWidget {
             child: const Text('Thêm'),
           ),
         ],
-      ),
-    );
+      );
+    }));
   }
 
   void _showRemoveConfirm(BuildContext context, ClassStudentModel student) {

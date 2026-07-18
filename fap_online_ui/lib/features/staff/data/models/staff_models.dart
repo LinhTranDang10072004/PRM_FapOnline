@@ -4,6 +4,52 @@ library staff_models;
 import 'package:intl/intl.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// UC-X: Staff References
+// ─────────────────────────────────────────────────────────────────────────────
+
+class TeacherModel {
+  final int teacherId;
+  final String teacherCode;
+  final String fullName;
+  final String? department;
+
+  const TeacherModel({
+    required this.teacherId,
+    required this.teacherCode,
+    required this.fullName,
+    this.department,
+  });
+
+  factory TeacherModel.fromJson(Map<String, dynamic> json) => TeacherModel(
+        teacherId: (json['teacherId'] as num).toInt(),
+        teacherCode: json['teacherCode'] as String? ?? '',
+        fullName: json['fullName'] as String? ?? '',
+        department: json['department'] as String?,
+      );
+}
+
+class StudentModel {
+  final int studentId;
+  final String studentCode;
+  final String fullName;
+  final String? major;
+
+  const StudentModel({
+    required this.studentId,
+    required this.studentCode,
+    required this.fullName,
+    this.major,
+  });
+
+  factory StudentModel.fromJson(Map<String, dynamic> json) => StudentModel(
+        studentId: (json['studentId'] as num).toInt(),
+        studentCode: json['studentCode'] as String? ?? '',
+        fullName: json['fullName'] as String? ?? '',
+        major: json['major'] as String?,
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // UC-12: Staff Dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 

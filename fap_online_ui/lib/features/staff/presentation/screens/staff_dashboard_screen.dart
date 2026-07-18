@@ -92,6 +92,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         ),
         child: Row(
           children: [
+            IconButton(
+              icon: const Icon(Icons.menu_rounded, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +159,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.15,
             children: [
               StaffStatCard(
                 label: 'Lớp đang hoạt động',

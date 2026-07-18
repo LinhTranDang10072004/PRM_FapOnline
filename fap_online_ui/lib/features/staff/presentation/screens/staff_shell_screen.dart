@@ -19,7 +19,6 @@ class StaffShellScreen extends StatefulWidget {
 
 class _StaffShellScreenState extends State<StaffShellScreen> {
   int _currentIndex = 0;
-  bool _initialized = false;
 
   final List<Widget> _tabs = const [
     StaffDashboardScreen(),
@@ -29,13 +28,14 @@ class _StaffShellScreenState extends State<StaffShellScreen> {
   ];
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      _initialized = true;
-      // Pre-load application count for badge
-      context.read<StaffApplicationProvider>().loadApplications();
-    }
+  void initState() {
+    super.initState();
+    // Pre-load application count for badge — defer to after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<StaffApplicationProvider>().loadApplications();
+      }
+    });
   }
 
   @override

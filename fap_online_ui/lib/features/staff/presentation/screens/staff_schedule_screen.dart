@@ -15,6 +15,7 @@ class StaffScheduleScreen extends StatefulWidget {
 
 class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
   DateTime _selectedDate = DateTime.now();
+  DateTime _baseDate = DateTime.now();
   final PageController _pageController = PageController(initialPage: 0);
 
   @override
@@ -50,11 +51,34 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.calendar_month_rounded),
+            tooltip: 'Chọn ngày',
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                setState(() {
+                  _baseDate = picked;
+                  _selectedDate = picked;
+                });
+                _loadForDate(picked);
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.today_rounded),
             tooltip: 'Hôm nay',
             onPressed: () {
-              setState(() => _selectedDate = DateTime.now());
-              _loadForDate(DateTime.now());
+              final now = DateTime.now();
+              setState(() {
+                _baseDate = now;
+                _selectedDate = now;
+              });
+              _loadForDate(now);
             },
           ),
         ],
@@ -98,25 +122,36 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
 
   Widget _buildDateStrip() {
     final days = List.generate(7, (i) {
-      final d = DateTime.now().subtract(Duration(days: 3 - i));
+      final d = _baseDate.subtract(Duration(days: 3 - i));
       return d;
     });
 
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: days.map((day) {
-          final isSelected = DateFormat('yyyy-MM-dd').format(day) ==
-              DateFormat('yyyy-MM-dd').format(_selectedDate);
-          final isToday = DateFormat('yyyy-MM-dd').format(day) ==
-              DateFormat('yyyy-MM-dd').format(DateTime.now());
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedDate = day);
-              _loadForDate(day);
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded, color: AppColors.textSecondary),
+            onPressed: () {
+              setState(() => _baseDate = _baseDate.subtract(const Duration(days: 7)));
             },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: days.map((day) {
+                final isSelected = DateFormat('yyyy-MM-dd').format(day) ==
+                    DateFormat('yyyy-MM-dd').format(_selectedDate);
+                final isToday = DateFormat('yyyy-MM-dd').format(day) ==
+                    DateFormat('yyyy-MM-dd').format(DateTime.now());
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedDate = day);
+                    _loadForDate(day);
+                  },
             child: Container(
               width: 44,
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -161,12 +196,24 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
               ),
             ),
           );
-        }).toList(),
+          }).toList(),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+            onPressed: () {
+              setState(() => _baseDate = _baseDate.add(const Duration(days: 7)));
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          ),
+        ],
       ),
     );
   }
 
   void _showCreateScheduleSheet(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
     final classIdCtrl = TextEditingController();
     final roomIdCtrl = TextEditingController();
     final slotIdCtrl = TextEditingController();
@@ -187,59 +234,84 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Tạo lịch học mới',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 16),
-              _formField(classIdCtrl, 'ID Lớp học *', isNum: true),
-              const SizedBox(height: 10),
-              _formField(roomIdCtrl, 'ID Phòng học *', isNum: true),
-              const SizedBox(height: 10),
-              _formField(slotIdCtrl, 'ID Ca học *', isNum: true),
-              const SizedBox(height: 10),
-              _formField(dateCtrl, 'Ngày (yyyy-MM-dd) *'),
-              const SizedBox(height: 10),
-              _formField(noteCtrl, 'Ghi chú (tùy chọn)'),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    final req = StaffCreateScheduleRequest(
-                      classId: int.tryParse(classIdCtrl.text) ?? 0,
-                      roomId: int.tryParse(roomIdCtrl.text) ?? 0,
-                      timeSlotId: int.tryParse(slotIdCtrl.text) ?? 0,
-                      scheduleDate: dateCtrl.text.trim(),
-                      note: noteCtrl.text.trim(),
-                    );
-                    final provider = context.read<StaffScheduleProvider>();
-                    final ok = await provider.createSchedule(req);
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(ok
-                          ? 'Tạo lịch thành công!'
-                          : (provider.error ?? 'Lỗi')),
-                      backgroundColor: ok ? AppColors.success : AppColors.error,
-                    ));
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Tạo lịch học mới',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                const SizedBox(height: 16),
+                _formField(classIdCtrl, 'ID Lớp học *', isNum: true, validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  if (int.tryParse(v) == null) return 'ID không hợp lệ';
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(roomIdCtrl, 'ID Phòng học *', isNum: true, validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  if (int.tryParse(v) == null) return 'ID không hợp lệ';
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(slotIdCtrl, 'ID Ca học *', isNum: true, validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  if (int.tryParse(v) == null) return 'ID không hợp lệ';
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(dateCtrl, 'Ngày (yyyy-MM-dd) *', validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  try {
+                    DateFormat('yyyy-MM-dd').parseStrict(v);
+                  } catch (_) {
+                    return 'Định dạng yyyy-MM-dd không hợp lệ';
+                  }
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(noteCtrl, 'Ghi chú (tùy chọn)'),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) return;
+                      
+                      final req = StaffCreateScheduleRequest(
+                        classId: int.parse(classIdCtrl.text),
+                        roomId: int.parse(roomIdCtrl.text),
+                        timeSlotId: int.parse(slotIdCtrl.text),
+                        scheduleDate: dateCtrl.text.trim(),
+                        note: noteCtrl.text.trim(),
+                      );
+                      final provider = context.read<StaffScheduleProvider>();
+                      final ok = await provider.createSchedule(req);
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(ok
+                            ? 'Tạo lịch thành công!'
+                            : (provider.error ?? 'Lỗi')),
+                        backgroundColor: ok ? AppColors.success : AppColors.error,
+                      ));
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Tạo lịch',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
-                  child: const Text('Tạo lịch',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
@@ -247,6 +319,7 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
   }
 
   void _showEditScheduleSheet(BuildContext context, ScheduleModel s) {
+    final formKey = GlobalKey<FormState>();
     final roomIdCtrl =
         TextEditingController(text: s.roomId?.toString() ?? '');
     final slotIdCtrl =
@@ -268,61 +341,82 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Sửa lịch học',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 16),
-              _formField(roomIdCtrl, 'ID Phòng học', isNum: true),
-              const SizedBox(height: 10),
-              _formField(slotIdCtrl, 'ID Ca học', isNum: true),
-              const SizedBox(height: 10),
-              _formField(dateCtrl, 'Ngày (yyyy-MM-dd)'),
-              const SizedBox(height: 10),
-              _formField(noteCtrl, 'Ghi chú'),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    final req = StaffUpdateScheduleRequest(
-                      roomId: int.tryParse(roomIdCtrl.text),
-                      timeSlotId: int.tryParse(slotIdCtrl.text),
-                      scheduleDate: dateCtrl.text.trim().isNotEmpty
-                          ? dateCtrl.text.trim()
-                          : null,
-                      note: noteCtrl.text.trim().isNotEmpty
-                          ? noteCtrl.text.trim()
-                          : null,
-                    );
-                    final provider = context.read<StaffScheduleProvider>();
-                    final ok =
-                        await provider.updateSchedule(s.scheduleId!, req);
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(ok
-                          ? 'Cập nhật thành công!'
-                          : (provider.error ?? 'Lỗi')),
-                      backgroundColor: ok ? AppColors.success : AppColors.error,
-                    ));
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Sửa lịch học',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                const SizedBox(height: 16),
+                _formField(roomIdCtrl, 'ID Phòng học', isNum: true, validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  if (int.tryParse(v) == null) return 'ID không hợp lệ';
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(slotIdCtrl, 'ID Ca học', isNum: true, validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  if (int.tryParse(v) == null) return 'ID không hợp lệ';
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(dateCtrl, 'Ngày (yyyy-MM-dd)', validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Không được để trống';
+                  try {
+                    DateFormat('yyyy-MM-dd').parseStrict(v);
+                  } catch (_) {
+                    return 'Định dạng yyyy-MM-dd không hợp lệ';
+                  }
+                  return null;
+                }),
+                const SizedBox(height: 10),
+                _formField(noteCtrl, 'Ghi chú'),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) return;
+                      
+                      final req = StaffUpdateScheduleRequest(
+                        roomId: int.tryParse(roomIdCtrl.text),
+                        timeSlotId: int.tryParse(slotIdCtrl.text),
+                        scheduleDate: dateCtrl.text.trim().isNotEmpty
+                            ? dateCtrl.text.trim()
+                            : null,
+                        note: noteCtrl.text.trim().isNotEmpty
+                            ? noteCtrl.text.trim()
+                            : null,
+                      );
+                      final provider = context.read<StaffScheduleProvider>();
+                      final ok =
+                          await provider.updateSchedule(s.scheduleId!, req);
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(ok
+                            ? 'Sửa lịch thành công!'
+                            : (provider.error ?? 'Lỗi')),
+                        backgroundColor: ok ? AppColors.success : AppColors.error,
+                      ));
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Lưu thay đổi',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
-                  child: const Text('Lưu thay đổi',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
@@ -362,10 +456,11 @@ class _StaffScheduleScreenState extends State<StaffScheduleScreen> {
   }
 
   Widget _formField(TextEditingController ctrl, String label,
-      {bool isNum = false}) {
-    return TextField(
+      {bool isNum = false, String? Function(String?)? validator}) {
+    return TextFormField(
       controller: ctrl,
       keyboardType: isNum ? TextInputType.number : TextInputType.text,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
