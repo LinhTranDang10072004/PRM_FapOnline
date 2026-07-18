@@ -80,7 +80,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		return roleIds.stream()
 				.map(roleMap::get)
 				.filter(role -> role != null && Boolean.TRUE.equals(role.getIsActive()))
-				.map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role.getRoleName().toUpperCase()))
+				.map(role -> {
+					String roleName = role.getRoleName().toUpperCase();
+					if (!roleName.startsWith("ROLE_")) {
+						roleName = "ROLE_" + roleName;
+					}
+					return (GrantedAuthority) new SimpleGrantedAuthority(roleName);
+				})
 				.collect(Collectors.toList());
 	}
 }

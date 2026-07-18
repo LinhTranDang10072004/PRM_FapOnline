@@ -21,6 +21,6 @@ public class UpdateScheduleRequest {
     @Size(max = 500, message = "Ghi chú không được vượt quá 500 ký tự")
     private String note;
 
-   
+
     private String status;
 }

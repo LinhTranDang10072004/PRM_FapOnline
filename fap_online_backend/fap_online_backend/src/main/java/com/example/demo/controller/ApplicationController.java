@@ -28,10 +28,15 @@ public class ApplicationController {
     @GetMapping
     @Operation(
             summary = "Danh sách đơn từ")
-    public ResponseEntity<List<ApplicationDTO>> getApplications(
+    public ResponseEntity<?> getApplications(
             @Parameter(description = "Lọc theo trạng thái: Pending | Approved | Rejected | Cancelled")
             @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(applicationService.getApplications(status));
+        try {
+            return ResponseEntity.ok(applicationService.getApplications(status));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : e.toString(), "trace", e.getStackTrace()[0].toString()));
+        }
     }
 
     @GetMapping("/{applicationId}")

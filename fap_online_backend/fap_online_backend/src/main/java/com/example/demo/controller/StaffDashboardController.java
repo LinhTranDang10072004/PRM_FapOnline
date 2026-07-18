@@ -33,12 +33,13 @@ public class StaffDashboardController {
     private final StaffDashboardService staffDashboardService;
 
     @GetMapping
-    @Operation(
-            summary = "Tổng quan học vụ (Staff Dashboard)",
-            description = "Trả về: số lớp đang hoạt động, số đơn chờ xử lý, " +
-                          "số lớp có giáo viên, tổng sinh viên, và danh sách lịch học hôm nay."
-    )
-    public ResponseEntity<StaffDashboardDTO> getDashboard() {
-        return ResponseEntity.ok(staffDashboardService.getDashboard());
+    @Operation(summary = "Lấy tổng quan Staff Dashboard")
+    public ResponseEntity<?> getDashboard() {
+        try {
+            return ResponseEntity.ok(staffDashboardService.getDashboard());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : e.toString(), "trace", e.getStackTrace()[0].toString()));
+        }
     }
 }

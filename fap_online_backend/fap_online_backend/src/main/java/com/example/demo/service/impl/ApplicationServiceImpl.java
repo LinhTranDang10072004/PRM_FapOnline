@@ -65,19 +65,25 @@ public class ApplicationServiceImpl implements ApplicationService {
         // Batch-load Student + User để tránh N+1
         List<Integer> studentIds = applications.stream()
                 .map(Application::getStudentId).distinct().collect(Collectors.toList());
-        Map<Integer, Student> studentMap = studentRepository.findAllByStudentIdIn(studentIds)
-                .stream().collect(Collectors.toMap(Student::getStudentId, s -> s));
-        Map<Integer, User> userMap = userRepository.findAllById(
-                studentMap.values().stream()
-                        .map(Student::getUserId).distinct().collect(Collectors.toList())
-        ).stream().collect(Collectors.toMap(User::getUserId, u -> u));
+        Map<Integer, Student> studentMap = studentIds.isEmpty()
+                ? Map.of()
+                : studentRepository.findAllByStudentIdIn(studentIds)
+                        .stream().collect(Collectors.toMap(Student::getStudentId, s -> s));
+        List<Integer> studentUserIds = studentMap.values().stream()
+                .map(Student::getUserId).distinct().collect(Collectors.toList());
+        Map<Integer, User> userMap = studentUserIds.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(studentUserIds)
+                        .stream().collect(Collectors.toMap(User::getUserId, u -> u));
 
         // Batch-load ApplicationType
         List<Integer> typeIds = applications.stream()
                 .map(Application::getApplicationTypeId).filter(Objects::nonNull)
                 .distinct().collect(Collectors.toList());
-        Map<Integer, ApplicationType> typeMap = applicationTypeRepository.findAllById(typeIds)
-                .stream().collect(Collectors.toMap(ApplicationType::getApplicationTypeId, t -> t));
+        Map<Integer, ApplicationType> typeMap = typeIds.isEmpty()
+                ? Map.of()
+                : applicationTypeRepository.findAllById(typeIds)
+                        .stream().collect(Collectors.toMap(ApplicationType::getApplicationTypeId, t -> t));
 
         // Batch-load User của Staff (processedBy)
         List<Integer> processorUserIds = applications.stream()
