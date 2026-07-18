@@ -36,16 +36,16 @@ public class AuthService {
 		}
 
 		String token = jwtService.generateToken(user.getUserId(), user.getUsername(), user.getFullName());
-		return new AuthResponse(token, user.getUsername(), user.getFullName(), "Dang nhap thanh cong");
+		return new AuthResponse(user.getUserId(),token, user.getUsername(), user.getFullName(), "Dang nhap thanh cong");
 	}
 
 	public AuthResponse me(String token) {
 		JwtService.TokenData tokenData = validateToken(token);
-		return new AuthResponse(extractToken(token), tokenData.getUsername(), tokenData.getFullName(), "Token hop le");
+		return new AuthResponse(tokenData.getUserId(), extractToken(token), tokenData.getUsername(), tokenData.getFullName(), "Token hop le");
 	}
 
 	public AuthResponse logout() {
-		return new AuthResponse(null, null, null, "Dang xuat thanh cong");
+		return new AuthResponse(null,null, null, null, "Dang xuat thanh cong");
 	}
 
 	public JwtService.TokenData validateToken(String authorizationHeader) {

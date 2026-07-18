@@ -20,7 +20,7 @@ class AuthService {
   static const _tokenKey = 'auth_token';
   static const _usernameKey = 'auth_username';
   static const _fullNameKey = 'auth_full_name';
-
+  static const _userIdKey = 'auth_user_id';
   Future<AuthResponse> login(String username, String password) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.loginPath}');
 
@@ -104,6 +104,7 @@ class AuthService {
     await prefs.remove(_tokenKey);
     await prefs.remove(_usernameKey);
     await prefs.remove(_fullNameKey);
+    await prefs.remove(_userIdKey);
   }
 
   Future<void> _saveSession(AuthResponse auth) async {
@@ -112,9 +113,18 @@ class AuthService {
     if (auth.username != null) {
       await prefs.setString(_usernameKey, auth.username!);
     }
+    if (auth.userId != null) {
+      await prefs.setInt(_userIdKey, auth.userId!);
+    }
     if (auth.fullName != null) {
       await prefs.setString(_fullNameKey, auth.fullName!);
     }
+  }
+
+  Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    return prefs.getInt(_userIdKey);
   }
 
   Map<String, dynamic> _decodeBody(String raw) {

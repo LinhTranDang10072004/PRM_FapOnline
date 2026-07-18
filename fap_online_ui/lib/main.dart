@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
-
+import 'controllers/teacher_schedule_controller.dart';
+import 'controllers/teacher_controller.dart';
+import 'controllers/attendance_controller.dart';
+import 'controllers/grade_controller.dart';
+import'controllers/teacher_class_controller.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const FapOnlineApp());
@@ -11,27 +15,36 @@ void main() {
 
 class FapOnlineApp extends StatelessWidget {
   const FapOnlineApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FAP Online',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TeacherController()),
+
+        ChangeNotifierProvider(create: (_) => TeacherScheduleController()),
+
+        ChangeNotifierProvider(create: (_) => AttendanceController()),
+
+        ChangeNotifierProvider(create: (_) => GradeController()),
+        ChangeNotifierProvider(create: (_) => TeacherClassController()),
+      ],
+      child: MaterialApp(
+        title: 'FAP Online',
+        debugShowCheckedModeBanner: false,
+
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          useMaterial3: true,
+          inputDecorationTheme: const InputDecorationTheme(filled: true),
         ),
+        home: const AuthGate(),
       ),
-      home: const AuthGate(),
     );
   }
 }
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
-
   @override
   State<AuthGate> createState() => _AuthGateState();
 }
@@ -39,7 +52,6 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   final _authService = AuthService();
   late Future<bool> _sessionFuture;
-
   @override
   void initState() {
     super.initState();
@@ -56,7 +68,6 @@ class _AuthGateState extends State<AuthGate> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
         if (snapshot.data == true) {
           return const HomeScreen();
         }
