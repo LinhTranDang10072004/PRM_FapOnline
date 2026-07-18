@@ -51,6 +51,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
 
+  Future<bool> _checkIsStaff() async {
+    try {
+      await ApiService().get(ApiEndpoints.staffClasses);
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 403 || e.statusCode == 401) {
+        return false;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -65,15 +79,14 @@ class _LoginScreenState extends State<LoginScreen>
     if (!mounted) return;
 
     if (success) {
-      final role = await PreferencesHelper.getRole();
+      final isStaff = await _checkIsStaff();
       if (!mounted) return;
 
       setState(() => _isLoading = false);
 
-      if (role == 'ROLE_STAFF' || role == 'STAFF' || role == 'Staff') {
+      if (isStaff) {
         Navigator.pushReplacementNamed(context, '/staff-shell');
       } else {
-        // Fallback for parent or other roles
         Navigator.pushReplacementNamed(context, '/parent-shell');
       }
     } else {
