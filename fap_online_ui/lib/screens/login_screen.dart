@@ -4,6 +4,7 @@ import '../models/request/login_request.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../config/app_routes.dart';
+import '../utils/preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,7 +55,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      Navigator.of(context).pushReplacementNamed(AppRoutes.parentShell);
+      final role = await PreferencesHelper.getRole();
+      if (!mounted) return;
+      if (role?.toUpperCase() == 'STAFF' ||
+          role?.toUpperCase() == 'ROLE_STAFF') {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.staffShell);
+      } else {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.parentShell);
+      }
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {

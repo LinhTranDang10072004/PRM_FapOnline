@@ -61,5 +61,20 @@ class AuthService {
     if (fullName != null && fullName.isNotEmpty) {
       await PreferencesHelper.saveFullName(fullName);
     }
+
+    // Fetch role via /auth/me endpoint since AuthResponse doesn't include role
+    try {
+      final meData = await _apiService.get(ApiEndpoints.me);
+      if (meData is Map<String, dynamic>) {
+        final roles = meData['roles'] as List<dynamic>?;
+        final role = meData['role'] as String? ??
+            (roles?.isNotEmpty == true ? roles!.first as String? : null);
+        if (role != null && role.isNotEmpty) {
+          await PreferencesHelper.saveRole(role);
+        }
+      }
+    } catch (_) {
+
+    }
   }
 }

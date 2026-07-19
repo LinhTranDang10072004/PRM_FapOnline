@@ -41,6 +41,32 @@ class ApiEndpoints {
   static String feesSemester(int studentId, int semesterId) => '/fees/semester/$studentId/$semesterId';
   static String feesTotalUnpaid(int studentId) => '/fees/total-unpaid/$studentId';
 
+  // ── Staff ───────────────────────────────────────────────────────────────
+  // References
+  static const String staffReferenceTeachers = '/staff/references/teachers';
+  static const String staffReferenceStudents = '/staff/references/students';
+
+  // UC-12: Staff Dashboard
+  static const String staffDashboard = '/staff/dashboard';
+
+  // UC-13/14/15: Class management
+  static const String staffClasses = '/staff/classes';
+  static String staffClassById(int classId) => '/staff/classes/$classId';
+  static String staffClassTeacher(int classId) => '/staff/classes/$classId/teacher';
+  static String staffClassStudents(int classId) => '/staff/classes/$classId/students';
+  static String staffClassStudent(int classId, int studentId) =>
+      '/staff/classes/$classId/students/$studentId';
+
+  // UC-16/17: Schedule management
+  static const String staffSchedules = '/staff/schedules';
+  static String staffScheduleById(int scheduleId) => '/staff/schedules/$scheduleId';
+
+  // UC-18: Application management
+  static const String staffApplications = '/staff/applications';
+  static String staffApplicationById(int id) => '/staff/applications/$id';
+  static String staffApplicationApprove(int id) => '/staff/applications/$id/approve';
+  static String staffApplicationReject(int id) => '/staff/applications/$id/reject';
+
   static String getImageUrl(String path) {
     if (path.startsWith('http')) return path;
     final baseDomain = baseUrl.replaceAll('/api', '');

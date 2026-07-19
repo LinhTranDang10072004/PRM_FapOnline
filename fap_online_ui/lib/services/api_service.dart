@@ -30,6 +30,8 @@ class ApiService {
           )
           .timeout(const Duration(seconds: 15));
       return _processResponse(response);
+    } on ApiException {
+      rethrow; // Giữ nguyên statusCode từ _processResponse
     } catch (e) {
       throw ApiException(e.toString(), 0);
     }
@@ -57,6 +59,20 @@ class ApiService {
             Uri.parse(ApiEndpoints.baseUrl + endpoint),
             headers: await _getHeaders(),
             body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(const Duration(seconds: 15));
+      return _processResponse(response);
+    } catch (e) {
+      throw ApiException(e.toString(), 0);
+    }
+  }
+
+  Future<dynamic> delete(String endpoint) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse(ApiEndpoints.baseUrl + endpoint),
+            headers: await _getHeaders(),
           )
           .timeout(const Duration(seconds: 15));
       return _processResponse(response);

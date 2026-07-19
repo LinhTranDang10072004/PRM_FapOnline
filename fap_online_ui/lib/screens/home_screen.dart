@@ -5,6 +5,16 @@ import '../provider/parent_child_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_shadows.dart';
 
+import '../services/auth_service.dart';
+import 'login_screen.dart';
+import 'student/student_dashboard_screen.dart';
+import 'student/timetable_screen.dart';
+import 'student/attendance_screen.dart';
+import 'student/mark_report_screen.dart';
+import 'student/transcript_screen.dart';
+import 'student/applications_screen.dart';
+import 'student/profile_screen.dart';
+import 'student/notifications_screen.dart';
 import 'dashboard/dashboard_tab.dart';
 import 'children/my_children_screen.dart';
 import 'timetable/timetable_screen.dart';
@@ -42,6 +52,20 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<DashboardProvider>().fetchDashboard();
       context.read<ParentChildProvider>().fetchChildren();
     }
+  }
+
+  Widget _buildDrawerItem(IconData icon, String title, Widget screen) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      onTap: () {
+        Navigator.pop(context); // Close drawer
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => screen),
+        );
+      },
+    );
   }
 
   @override

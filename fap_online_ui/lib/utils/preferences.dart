@@ -1,9 +1,10 @@
-﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/constants.dart';
 
 class PreferencesHelper {
   static const String _usernameKey = 'username';
   static const String _fullNameKey = 'full_name';
+  static const String _roleKey = 'user_role';
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -45,5 +46,16 @@ class PreferencesHelper {
     await prefs.remove(Constants.tokenKey);
     await prefs.remove(_usernameKey);
     await prefs.remove(_fullNameKey);
+    await prefs.remove(_roleKey);
+  }
+
+  static Future<void> saveRole(String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_roleKey, role);
+  }
+
+  static Future<String?> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_roleKey);
   }
 }
