@@ -183,7 +183,7 @@ class AppTheme {
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: CircleBorder(),
+        shape: StadiumBorder(),
       ),
 
       // ── Dialog ──────────────────────────────────────────────────────────

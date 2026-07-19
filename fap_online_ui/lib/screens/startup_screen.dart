@@ -4,6 +4,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_shadows.dart';
 import '../utils/preferences.dart';
+import '../services/api_service.dart';
+import '../config/api_endpoints.dart';
 
 class StartupScreen extends StatefulWidget {
   const StartupScreen({super.key});
@@ -50,9 +52,30 @@ class _StartupScreenState extends State<StartupScreen>
     if (!mounted) return;
 
     if (token != null && token.isNotEmpty) {
-      Navigator.pushReplacementNamed(context, '/parent-shell');
+      // API Probe: thử gọi staff-only endpoint để xác định role
+      final isStaff = await _checkIsStaff();
+      if (!mounted) return;
+      if (isStaff) {
+        Navigator.pushReplacementNamed(context, '/staff-shell');
+      } else {
+        Navigator.pushReplacementNamed(context, '/parent-shell');
+      }
     } else {
       Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  Future<bool> _checkIsStaff() async {
+    try {
+      await ApiService().get(ApiEndpoints.staffClasses);
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 403 || e.statusCode == 401) {
+        return false;
+      }
+      return true; // 500 = server bug, not a permission issue
+    } catch (_) {
+      return false;
     }
   }
 
@@ -187,13 +210,7 @@ class _StartupScreenState extends State<StartupScreen>
             left: 0,
             right: 0,
             child: Center(
-              child: Text(
-                'Dành cho phụ huynh học sinh',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textHint.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
+
             ),
           ),
         ],

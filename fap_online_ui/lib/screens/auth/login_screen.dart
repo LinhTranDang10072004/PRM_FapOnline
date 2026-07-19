@@ -5,6 +5,9 @@ import '../../provider/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_shadows.dart';
+import '../../services/api_service.dart';
+import '../../config/api_endpoints.dart';
+import '../../utils/preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,6 +50,21 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+
+  Future<bool> _checkIsStaff() async {
+    try {
+      await ApiService().get(ApiEndpoints.staffClasses);
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 403 || e.statusCode == 401) {
+        return false;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -60,10 +78,19 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (!mounted) return;
 
-    setState(() => _isLoading = false);
-
     if (success) {
-      Navigator.pushReplacementNamed(context, '/parent-shell');
+      final isStaff = await _checkIsStaff();
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      if (isStaff) {
+        Navigator.pushReplacementNamed(context, '/staff-shell');
+      } else {
+        Navigator.pushReplacementNamed(context, '/parent-shell');
+      }
+    } else {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -487,13 +514,7 @@ class _LoginScreenState extends State<LoginScreen>
 
             // ── Footer note ───────────────────────────────────────────
             Center(
-              child: Text(
-                'Dành cho phụ huynh học sinh',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textHint,
-                  fontSize: 12,
-                ),
-              ),
+
             ),
           ],
         ),

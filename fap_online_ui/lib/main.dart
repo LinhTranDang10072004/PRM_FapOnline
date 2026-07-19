@@ -12,7 +12,17 @@ import 'provider/transcript_provider.dart';
 import 'provider/student_fee_provider.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'features/staff/presentation/providers/staff_dashboard_provider.dart';
+import 'features/staff/presentation/providers/staff_class_provider.dart';
+import 'features/staff/presentation/providers/staff_schedule_provider.dart';
+import 'features/staff/presentation/providers/staff_application_provider.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('vi', null);
+
   runApp(
     MultiProvider(
       providers: [
@@ -23,6 +33,11 @@ void main() {
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
         ChangeNotifierProvider(create: (_) => TranscriptProvider()),
         ChangeNotifierProvider(create: (_) => StudentFeeProvider()),
+        // Staff Providers
+        ChangeNotifierProvider(create: (_) => StaffDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => StaffClassProvider()),
+        ChangeNotifierProvider(create: (_) => StaffScheduleProvider()),
+        ChangeNotifierProvider(create: (_) => StaffApplicationProvider()),
       ],
       child: const MyApp(),
     ),
