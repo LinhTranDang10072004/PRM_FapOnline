@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="D:/Tool/flutter_windows_3.41.9-stable/flutter/packages/flutter_tools/gradle" name="gradle">
+                <projects>
+                  <project path="D:/Tool/flutter_windows_3.41.9-stable/flutter/packages/flutter_tools/gradle" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/fap_online_ui/android" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/fap_online_ui/android" />
+            <option value="$PROJECT_DIR$/fap_online_ui/android/app" />
+            <option value="$USER_HOME$/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.23/android" />
+            <option value="D:/Tool/flutter_windows_3.41.9-stable/flutter/packages/flutter_tools/gradle" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>
