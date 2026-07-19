@@ -30,4 +30,10 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
     List<Schedule> findByClassId(Integer classId);
 
     List<Schedule> findByClassIdIn(List<Integer> classIds);
+
+    List<Schedule> findByScheduleDate(LocalDate scheduleDate);
+
+    List<Schedule> findByRoomIdAndScheduleDateAndTimeSlotId(Integer roomId, LocalDate scheduleDate, Integer timeSlotId);
+
+    List<Schedule> findByClassIdInAndScheduleDateAndTimeSlotId(List<Integer> classIds, LocalDate scheduleDate, Integer timeSlotId);
 }
