@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.ProfileDto;
+import com.example.demo.dto.StudentProfileDto;
 import com.example.demo.security.AuthenticatedUser;
 import com.example.demo.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -18,15 +18,15 @@ public class UserController {
 	}
 
 	@GetMapping("/profile")
-	public ResponseEntity<ProfileDto> getProfile(@AuthenticationPrincipal AuthenticatedUser user) {
-		ProfileDto profile = userService.getProfile(user.getUsername());
+	public ResponseEntity<StudentProfileDto> getProfile(@AuthenticationPrincipal AuthenticatedUser user) {
+		StudentProfileDto profile = userService.getProfile(user.getUsername());
 		return profile != null ? ResponseEntity.ok(profile) : ResponseEntity.notFound().build();
 	}
 
 	@PutMapping("/profile")
 	public ResponseEntity<?> updateProfile(
 			@AuthenticationPrincipal AuthenticatedUser user,
-			@RequestBody ProfileDto dto) {
+			@RequestBody StudentProfileDto dto) {
 		boolean success = userService.updateProfile(user.getUsername(), dto);
 		return success
 				? ResponseEntity.ok("Profile updated successfully")

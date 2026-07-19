@@ -4,6 +4,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.TeacherClassDTO;
 import com.example.demo.dto.TeacherDashboardResponse;
 import com.example.demo.dto.TeacherScheduleDTO;
+import com.example.demo.dto.ClassStudentDTO;
 import com.example.demo.entity.Teacher;
 import com.example.demo.service.TeacherService;
 
@@ -85,6 +86,14 @@ public class TeacherController {
                 teacherService.getTeacherClasses(userId)
         );
 
+    }
+
+    @GetMapping("/classes/{userId}/{classId}/students")
+    public ResponseEntity<List<ClassStudentDTO>> getClassStudents(
+            @PathVariable Integer userId,
+            @PathVariable Integer classId
+    ) {
+        return ResponseEntity.ok(teacherService.getClassStudents(userId, classId));
     }
 
 

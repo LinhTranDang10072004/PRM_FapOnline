@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import 'teacher_schedule_screen.dart';
 import 'attendance_screen.dart';
 import 'grade_management_screen.dart';
+import 'teacher_class_detail_screen.dart';
 
 import '../controllers/teacher_controller.dart';
 import '../services/auth_service.dart';
+import '../models/teacher_dashboard_model.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -47,12 +49,23 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Teacher Dashboard"),
-
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-
             onPressed: _loadDashboard,
+          ),
+          IconButton(
+            tooltip: 'Đăng xuất',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authService.logout();
+              if (!mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (_) => false,
+              );
+            },
           ),
         ],
       ),
@@ -205,6 +218,14 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 const SizedBox(height: 15),
 
                 _buildMenuButton(
+                  icon: Icons.class_,
+                  title: "My Classes",
+                  onTap: () {
+                    _showClassDetailSelector(context, dashboard.classes);
+                  },
+                ),
+
+                _buildMenuButton(
                   icon: Icons.calendar_month,
 
                   title: "Teaching Schedule",
@@ -238,6 +259,53 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           );
         },
       ),
+    );
+  }
+
+  void _showClassDetailSelector(
+    BuildContext context,
+    List<TeacherClass> classes,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Chọn lớp"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: classes.length,
+              itemBuilder: (context, index) {
+                final item = classes[index];
+                return ListTile(
+                  leading: const Icon(Icons.class_),
+                  title: Text("${item.classCode} - ${item.className}"),
+                  subtitle: Text(
+                    "${item.subjectName ?? ''} · ${item.studentCount ?? 0} SV",
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final userId = await authService.getUserId();
+                    if (!mounted || userId == null || item.classId == null) {
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TeacherClassDetailScreen(
+                          teacherClass: item,
+                          userId: userId,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 

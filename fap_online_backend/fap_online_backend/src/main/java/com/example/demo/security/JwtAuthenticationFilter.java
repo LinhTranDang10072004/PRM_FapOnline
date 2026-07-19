@@ -48,9 +48,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 			if (tokenData != null && tokenData.getUserId() != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 				List<GrantedAuthority> authorities = resolveAuthorities(tokenData.getUserId());
+				AuthenticatedUser principal = new AuthenticatedUser(
+						tokenData.getUserId(),
+						tokenData.getUsername(),
+						tokenData.getFullName()
+				);
 
 				Authentication authentication = new UsernamePasswordAuthenticationToken(
-						tokenData.getUserId().toString(),
+						principal,
 						null,
 						authorities
 				);

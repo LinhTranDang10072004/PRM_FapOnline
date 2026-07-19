@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping("/api/staff/classes")
 @RequiredArgsConstructor
 @Tag(name = "Staff - Classes", description = "UC-13/14/15: Quản lý lớp học, sinh viên, giáo viên")
-@PreAuthorize("hasRole('STAFF')")
+@PreAuthorize("hasAnyRole('STAFF','ADMIN')")
 public class StaffClassController {
 
     private final StaffClassService staffClassService;

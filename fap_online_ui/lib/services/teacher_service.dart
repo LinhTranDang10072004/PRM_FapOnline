@@ -1,66 +1,33 @@
-
-
 import 'package:dio/dio.dart';
 
+import '../config/api_config.dart';
 import '../models/teacher_dashboard_model.dart';
-
-
+import 'auth_service.dart';
 
 class TeacherService {
-
-
   final Dio dio = Dio();
+  final AuthService _authService = AuthService();
 
-
-
-  // Lấy dashboard giáo viên
-
-  Future<TeacherDashboard> getTeacherDashboard(
-      int userId
-  ) async {
-
-
+  Future<TeacherDashboard> getTeacherDashboard(int userId) async {
     try {
-
-
+      final token = await _authService.getToken();
       final response = await dio.get(
-        "http://10.0.2.2:8080/api/teacher/dashboard/$userId",
+        '${ApiConfig.baseUrl}/api/teacher/dashboard/$userId',
+        options: Options(
+          headers: {
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
+        ),
       );
 
-
-
-      if(response.statusCode == 200){
-
-
-        return TeacherDashboard.fromJson(
-          response.data
-        );
-
-
-      }else{
-
-
-        throw Exception(
-            "Không lấy được dữ liệu dashboard"
-        );
-
-
+      if (response.statusCode == 200) {
+        return TeacherDashboard.fromJson(response.data);
       }
 
-
-
-    } catch(e){
-
-
-      throw Exception(
-          "Lỗi gọi API Teacher Dashboard: $e"
-      );
-
-
+      throw Exception('Không lấy được dữ liệu dashboard');
+    } catch (e) {
+      throw Exception('Lỗi gọi API Teacher Dashboard: $e');
     }
-
-
   }
-
-
 }

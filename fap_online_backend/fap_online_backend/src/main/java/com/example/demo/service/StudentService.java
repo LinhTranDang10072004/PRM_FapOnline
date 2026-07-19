@@ -25,6 +25,8 @@ public class StudentService {
     @Autowired private ScheduleRepository scheduleRepository;
     @Autowired private TimeSlotRepository timeSlotRepository;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private SchoolClassRepository schoolClassRepository;
+    @Autowired private SubjectRepository subjectRepository;
     @Autowired private EntityManager entityManager;
 
     private Student getStudentByUserId(Integer userId) {
@@ -35,7 +37,7 @@ public class StudentService {
     private static final DateTimeFormatter DATE_LABEL_FORMAT = DateTimeFormatter.ofPattern("dd/MM");
     private static final String[] DAY_LABELS = {"MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"};
 
-    public WeeklyTimetableDto getWeeklyTimetable(Integer userId, LocalDate fromDate, LocalDate toDate) {
+    public StudentWeeklyTimetableDto getWeeklyTimetable(Integer userId, LocalDate fromDate, LocalDate toDate) {
         Student student = getStudentByUserId(userId);
         List<ClassStudent> classStudents = classStudentRepository.findByStudentId(student.getStudentId());
         List<Integer> classIds = classStudents.stream().map(ClassStudent::getClassId).collect(Collectors.toList());
@@ -43,7 +45,7 @@ public class StudentService {
         LocalDate weekStart = fromDate != null ? fromDate : LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekEnd = toDate != null ? toDate : weekStart.plusDays(6);
 
-        WeeklyTimetableDto weekly = new WeeklyTimetableDto();
+        StudentWeeklyTimetableDto weekly = new StudentWeeklyTimetableDto();
         weekly.setYear(weekStart.getYear());
         weekly.setWeekStart(weekStart);
         weekly.setWeekEnd(weekEnd);
@@ -145,26 +147,70 @@ public class StudentService {
 
     public List<GradeDto> getMarkReport(Integer userId) {
         Student student = getStudentByUserId(userId);
-        
-        // Native query to get FinalGrades joined with Class and Subject
-        String sql = "SELECT c.ClassCode, s.SubjectCode, s.SubjectName, fg.FinalScore, fg.Result " +
+
+        String sql = "SELECT c.ClassId, c.ClassCode, s.SubjectCode, s.SubjectName, fg.FinalScore, fg.Result " +
                      "FROM FinalGrades fg " +
                      "JOIN Classes c ON fg.ClassId = c.ClassId " +
                      "JOIN Subjects s ON c.SubjectId = s.SubjectId " +
                      "WHERE fg.StudentId = :studentId";
-        
+
         List<Object[]> results = entityManager.createNativeQuery(sql)
                 .setParameter("studentId", student.getStudentId())
                 .getResultList();
-                
+
+        String componentSql = "SELECT gc.ComponentName, cgc.Weight, sg.Score " +
+                "FROM StudentGrades sg " +
+                "JOIN ClassGradeComponents cgc ON sg.ClassGradeComponentId = cgc.ClassGradeComponentId " +
+                "JOIN GradeComponents gc ON cgc.GradeComponentId = gc.GradeComponentId " +
+                "WHERE sg.StudentId = :studentId AND sg.ClassId = :classId " +
+                "ORDER BY cgc.ClassGradeComponentId";
+
+        String attendanceSql = "SELECT COUNT(sch.ScheduleId) as TotalSlots, " +
+                "SUM(CASE WHEN a.Status IN ('AbsentWithPermission', 'AbsentWithoutPermission') THEN 1 ELSE 0 END) as AbsentSlots " +
+                "FROM Schedules sch " +
+                "LEFT JOIN Attendances a ON sch.ScheduleId = a.ScheduleId AND a.StudentId = :studentId " +
+                "WHERE sch.ClassId = :classId AND sch.Status = 'Completed'";
+
         List<GradeDto> grades = new ArrayList<>();
         for (Object[] row : results) {
+            Integer classId = ((Number) row[0]).intValue();
             GradeDto dto = new GradeDto();
-            dto.setClassCode((String) row[0]);
-            dto.setSubjectCode((String) row[1]);
-            dto.setSubjectName((String) row[2]);
-            dto.setFinalScore(row[3] != null ? new BigDecimal(row[3].toString()) : null);
-            dto.setResult((String) row[4]);
+            dto.setClassId(classId);
+            dto.setClassCode((String) row[1]);
+            dto.setSubjectCode((String) row[2]);
+            dto.setSubjectName((String) row[3]);
+            dto.setFinalScore(row[4] != null ? new BigDecimal(row[4].toString()) : null);
+            dto.setResult((String) row[5]);
+
+            List<Object[]> attRows = entityManager.createNativeQuery(attendanceSql)
+                    .setParameter("studentId", student.getStudentId())
+                    .setParameter("classId", classId)
+                    .getResultList();
+            if (!attRows.isEmpty() && attRows.get(0) != null) {
+                Object[] att = attRows.get(0);
+                int total = att[0] != null ? ((Number) att[0]).intValue() : 0;
+                int absent = att[1] != null ? ((Number) att[1]).intValue() : 0;
+                double presentPercent = total > 0
+                        ? Math.round(((double) (total - absent) / total) * 10000.0) / 100.0
+                        : 0.0;
+                dto.setAttendancePercent(presentPercent);
+            } else {
+                dto.setAttendancePercent(0.0);
+            }
+
+            List<Object[]> componentRows = entityManager.createNativeQuery(componentSql)
+                    .setParameter("studentId", student.getStudentId())
+                    .setParameter("classId", classId)
+                    .getResultList();
+            List<GradeDto.ComponentGrade> components = new ArrayList<>();
+            for (Object[] cRow : componentRows) {
+                GradeDto.ComponentGrade component = new GradeDto.ComponentGrade();
+                component.setComponentName((String) cRow[0]);
+                component.setWeight(cRow[1] != null ? new BigDecimal(cRow[1].toString()) : BigDecimal.ZERO);
+                component.setScore(cRow[2] != null ? new BigDecimal(cRow[2].toString()) : null);
+                components.add(component);
+            }
+            dto.setComponents(components);
             grades.add(dto);
         }
         return grades;
@@ -203,7 +249,7 @@ public class StudentService {
         return dtos;
     }
 
-    public TranscriptDto getAcademicTranscript(Integer userId) {
+    public StudentTranscriptDto getAcademicTranscript(Integer userId) {
         Student student = getStudentByUserId(userId);
         
         String sql = "SELECT sem.SemesterName, sub.SubjectCode, sub.SubjectName, fg.FinalScore, fg.Result " +
@@ -218,7 +264,7 @@ public class StudentService {
                 .setParameter("studentId", student.getStudentId())
                 .getResultList();
 
-        TranscriptDto dto = new TranscriptDto();
+        StudentTranscriptDto dto = new StudentTranscriptDto();
         List<GradeDto> grades = new ArrayList<>();
         
         for (Object[] row : results) {
@@ -236,20 +282,97 @@ public class StudentService {
         return dto;
     }
 
+    public List<StudentClassDto> getMyClasses(Integer userId) {
+        Student student = getStudentByUserId(userId);
+        List<ClassStudent> enrollments = classStudentRepository.findByStudentId(student.getStudentId());
+        if (enrollments.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> classIds = enrollments.stream()
+                .map(ClassStudent::getClassId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Integer, SchoolClass> classMap = schoolClassRepository.findAllById(classIds).stream()
+                .collect(Collectors.toMap(SchoolClass::getClassId, c -> c));
+
+        List<Integer> subjectIds = classMap.values().stream()
+                .map(SchoolClass::getSubjectId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Integer, Subject> subjectMap = subjectRepository.findAllById(subjectIds).stream()
+                .collect(Collectors.toMap(Subject::getSubjectId, s -> s));
+
+        List<StudentClassDto> result = new ArrayList<>();
+        for (ClassStudent enrollment : enrollments) {
+            SchoolClass schoolClass = classMap.get(enrollment.getClassId());
+            if (schoolClass == null) {
+                continue;
+            }
+            Subject subject = subjectMap.get(schoolClass.getSubjectId());
+            result.add(StudentClassDto.builder()
+                    .classId(schoolClass.getClassId())
+                    .classCode(schoolClass.getClassCode())
+                    .className(schoolClass.getClassName())
+                    .subjectCode(subject != null ? subject.getSubjectCode() : null)
+                    .subjectName(subject != null ? subject.getSubjectName() : null)
+                    .status(enrollment.getStatus() != null ? enrollment.getStatus() : schoolClass.getStatus())
+                    .enrolledAt(enrollment.getEnrolledAt())
+                    .build());
+        }
+        return result;
+    }
+
     public DashboardSummaryDto getDashboardSummary(Integer userId) {
         DashboardSummaryDto dto = new DashboardSummaryDto();
-        List<NotificationDto> notifs = getNotifications(userId);
+        List<StudentNotificationDto> notifs = getNotifications(userId);
         dto.setUnreadNotifications((int) notifs.stream().filter(n -> !n.getIsRead()).count());
-        dto.setNextClassSubject("PRM392");
-        dto.setNextClassRoom("AL-R201");
-        dto.setNextClassTime("07:30 - 09:50");
+
+        Student student = getStudentByUserId(userId);
+        List<ClassStudent> classStudents = classStudentRepository.findByStudentId(student.getStudentId());
+        List<Integer> classIds = classStudents.stream()
+                .map(ClassStudent::getClassId)
+                .collect(Collectors.toList());
+
+        if (classIds.isEmpty()) {
+            return dto;
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        List<Object[]> rows = scheduleRepository.findTimetableEntries(
+                classIds, student.getStudentId(), today, today.plusDays(14));
+
+        for (Object[] row : rows) {
+            LocalDate scheduleDate = toLocalDate(row[1]);
+            LocalTime startTime = toLocalTime(row[4]);
+            LocalTime endTime = toLocalTime(row[5]);
+            String scheduleStatus = row[10] != null ? row[10].toString() : null;
+            if ("Cancelled".equalsIgnoreCase(scheduleStatus)) {
+                continue;
+            }
+            boolean upcoming = scheduleDate.isAfter(today)
+                    || (scheduleDate.isEqual(today) && (endTime == null || !endTime.isBefore(now)));
+            if (!upcoming) {
+                continue;
+            }
+
+            dto.setNextClassSubject(row[8] != null ? row[8].toString() : null);
+            dto.setNextClassRoom(row[2] != null ? row[2].toString() : null);
+            dto.setNextClassTime(formatTime(startTime) + " - " + formatTime(endTime));
+            break;
+        }
+
         return dto;
     }
 
-    public List<NotificationDto> getNotifications(Integer userId) {
+    public List<StudentNotificationDto> getNotifications(Integer userId) {
         List<Notification> notifs = notificationRepository.findByUserId(userId);
         return notifs.stream().map(n -> {
-            NotificationDto dto = new NotificationDto();
+            StudentNotificationDto dto = new StudentNotificationDto();
             dto.setNotificationId(n.getNotificationId());
             dto.setTitle(n.getTitle());
             dto.setContent(n.getContent());

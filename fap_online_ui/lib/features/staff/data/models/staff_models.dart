@@ -445,3 +445,119 @@ class ProcessApplicationRequest {
           'processNote': processNote,
       };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rooms & TimeSlots
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RoomModel {
+  final int roomId;
+  final String roomCode;
+  final String roomName;
+  final int capacity;
+  final String? location;
+  final String? status;
+
+  const RoomModel({
+    required this.roomId,
+    required this.roomCode,
+    required this.roomName,
+    required this.capacity,
+    this.location,
+    this.status,
+  });
+
+  factory RoomModel.fromJson(Map<String, dynamic> json) => RoomModel(
+        roomId: (json['roomId'] as num).toInt(),
+        roomCode: json['roomCode'] as String? ?? '',
+        roomName: json['roomName'] as String? ?? '',
+        capacity: (json['capacity'] as num?)?.toInt() ?? 0,
+        location: json['location'] as String?,
+        status: json['status'] as String?,
+      );
+}
+
+class RoomRequest {
+  final String roomCode;
+  final String roomName;
+  final int capacity;
+  final String? location;
+  final String? status;
+
+  const RoomRequest({
+    required this.roomCode,
+    required this.roomName,
+    required this.capacity,
+    this.location,
+    this.status,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'roomCode': roomCode,
+        'roomName': roomName,
+        'capacity': capacity,
+        if (location != null) 'location': location,
+        if (status != null) 'status': status,
+      };
+}
+
+class TimeSlotModel {
+  final int timeSlotId;
+  final String slotCode;
+  final String slotName;
+  final String startTime;
+  final String endTime;
+  final String? status;
+
+  const TimeSlotModel({
+    required this.timeSlotId,
+    required this.slotCode,
+    required this.slotName,
+    required this.startTime,
+    required this.endTime,
+    this.status,
+  });
+
+  factory TimeSlotModel.fromJson(Map<String, dynamic> json) {
+    String asTime(dynamic value) {
+      if (value == null) return '';
+      final text = value.toString();
+      return text.length >= 5 ? text.substring(0, 5) : text;
+    }
+
+    return TimeSlotModel(
+      timeSlotId: (json['timeSlotId'] as num).toInt(),
+      slotCode: json['slotCode'] as String? ?? '',
+      slotName: json['slotName'] as String? ?? '',
+      startTime: asTime(json['startTime']),
+      endTime: asTime(json['endTime']),
+      status: json['status'] as String?,
+    );
+  }
+
+  String get timeRange => '$startTime - $endTime';
+}
+
+class TimeSlotRequest {
+  final String slotCode;
+  final String slotName;
+  final String startTime;
+  final String endTime;
+  final String? status;
+
+  const TimeSlotRequest({
+    required this.slotCode,
+    required this.slotName,
+    required this.startTime,
+    required this.endTime,
+    this.status,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'slotCode': slotCode,
+        'slotName': slotName,
+        'startTime': startTime,
+        'endTime': endTime,
+        if (status != null) 'status': status,
+      };
+}

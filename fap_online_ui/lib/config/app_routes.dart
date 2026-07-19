@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../screens/startup_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/children/child_detail_hub_screen.dart';
+import '../screens/student/student_dashboard_screen.dart';
+import '../screens/teacher_dashboard_screen.dart';
 import '../features/staff/presentation/screens/staff_shell_screen.dart';
 
 class AppRoutes {
   static const String start = '/';
   static const String login = '/login';
   static const String parentShell = '/parent-shell';
+  static const String studentShell = '/student-shell';
+  static const String teacherShell = '/teacher-shell';
   static const String dashboard = parentShell;
   static const String childDetail = '/child-detail';
   static const String staffShell = '/staff-shell';
@@ -26,6 +29,16 @@ class AppRoutes {
       case parentShell:
         return MaterialPageRoute(
           builder: (_) => const HomeScreen(),
+          settings: settings,
+        );
+      case studentShell:
+        return MaterialPageRoute(
+          builder: (_) => const StudentDashboardScreen(),
+          settings: settings,
+        );
+      case teacherShell:
+        return MaterialPageRoute(
+          builder: (_) => const TeacherDashboardScreen(),
           settings: settings,
         );
       case childDetail:

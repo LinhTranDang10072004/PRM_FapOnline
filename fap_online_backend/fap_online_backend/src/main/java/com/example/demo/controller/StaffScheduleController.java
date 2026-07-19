@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Staff - Schedules")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasRole('STAFF')")
+@PreAuthorize("hasAnyRole('STAFF','ADMIN')")
 public class StaffScheduleController {
 
     private final StaffScheduleService staffScheduleService;

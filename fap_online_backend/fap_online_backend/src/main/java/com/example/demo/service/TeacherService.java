@@ -2,7 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.*;
 
-import com.example.demo.dto.TodayScheduleDTO;
+import com.example.demo.dto.TeacherTodayScheduleDTO;
 
 import com.example.demo.entity.*;
 
@@ -16,6 +16,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 
@@ -43,6 +45,9 @@ public class TeacherService {
 
     @Autowired
     private ClassStudentRepository classStudentRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
 
     @Autowired
     private RoomRepository roomRepository;
@@ -79,10 +84,7 @@ public class TeacherService {
 
             }
 
-            Integer studentCount =
-                    classStudentRepository.countByClassId(
-                            classesItem.getClassId()
-                    );
+            Integer studentCount = (int) classStudentRepository.countByClassId(classesItem.getClassId());
 
             TeacherClassDTO dto =
                     new TeacherClassDTO(
@@ -132,7 +134,7 @@ public class TeacherService {
 
 
 
-        List<TodayScheduleDTO> todayScheduleList =
+        List<TeacherTodayScheduleDTO> todayScheduleList =
                 new ArrayList<>();
 
         for(Schedule schedule : schedules){
@@ -203,8 +205,8 @@ public class TeacherService {
 
                     }
 
-                    TodayScheduleDTO scheduleDTO =
-                            new TodayScheduleDTO(
+                    TeacherTodayScheduleDTO scheduleDTO =
+                            new TeacherTodayScheduleDTO(
                                     schedule.getScheduleId(),
 
                                     currentClass.getClassId(),
@@ -466,7 +468,11 @@ public class TeacherService {
 
                             item.getClassName(),
 
-                            subjectName
+                            subjectName,
+
+                            (int) classStudentRepository.countByClassId(item.getClassId()),
+
+                            item.getStatus()
 
                     );
 
@@ -480,5 +486,54 @@ public class TeacherService {
 
     }
 
+    public List<ClassStudentDTO> getClassStudents(Integer userId, Integer classId) {
+        Optional<Teacher> teacherOptional = teacherRepository.findByUserId(userId);
+        if (teacherOptional.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Teacher teacher = teacherOptional.get();
+        List<Classes> classes = classesRepository.findByMainTeacherId(teacher.getTeacherId());
+        boolean ownsClass = classes.stream().anyMatch(c -> Objects.equals(c.getClassId(), classId));
+        if (!ownsClass) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Lớp không thuộc giáo viên này");
+        }
+
+        List<ClassStudent> enrollments = classStudentRepository.findByClassId(classId);
+        if (enrollments.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Integer> studentIds = enrollments.stream()
+                .map(ClassStudent::getStudentId)
+                .collect(java.util.stream.Collectors.toList());
+
+        Map<Integer, Student> studentMap = studentRepository.findAllById(studentIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Student::getStudentId, s -> s));
+
+        List<Integer> userIds = studentMap.values().stream()
+                .map(Student::getUserId)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+
+        Map<Integer, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(java.util.stream.Collectors.toMap(User::getUserId, u -> u));
+
+        List<ClassStudentDTO> result = new ArrayList<>();
+        for (ClassStudent cs : enrollments) {
+            Student student = studentMap.get(cs.getStudentId());
+            User user = student != null ? userMap.get(student.getUserId()) : null;
+            result.add(ClassStudentDTO.builder()
+                    .studentId(cs.getStudentId())
+                    .studentCode(student != null ? student.getStudentCode() : "")
+                    .fullName(user != null ? user.getFullName() : "")
+                    .enrolledAt(cs.getEnrolledAt())
+                    .status(cs.getStatus())
+                    .build());
+        }
+        return result;
+    }
 
 }

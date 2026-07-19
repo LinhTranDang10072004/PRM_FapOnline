@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping("/api/staff/rooms")
 @RequiredArgsConstructor
 @Tag(name = "Staff - Rooms", description = "UC-17: Quản lý phòng học")
-@PreAuthorize("hasRole('STAFF')")
+@PreAuthorize("hasAnyRole('STAFF','ADMIN')")
 public class RoomController {
 
     private final RoomService roomService;

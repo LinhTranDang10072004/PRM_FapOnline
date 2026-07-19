@@ -8,5 +8,12 @@ import java.util.List;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Integer> {
-    List<Application> findByStudentIdOrderByCreatedAtDesc(Integer studentId);
+
+	List<Application> findByStatus(String status);
+
+	List<Application> findByStudentId(Integer studentId);
+
+	List<Application> findByStudentIdAndStatus(Integer studentId, String status);
+
+	List<Application> findByStudentIdOrderByCreatedAtDesc(Integer studentId);
 }

@@ -1,31 +1,33 @@
 import 'package:dio/dio.dart';
 
+import '../config/api_config.dart';
 import '../models/teacher_schedule_model.dart';
+import 'auth_service.dart';
 
 class TeacherScheduleService {
   final Dio dio = Dio();
+  final AuthService _authService = AuthService();
 
-  Future<List<TeacherSchedule>> getTeacherSchedule(
-      int userId,
-      ) async {
+  Future<List<TeacherSchedule>> getTeacherSchedule(int userId) async {
     try {
+      final token = await _authService.getToken();
       final response = await dio.get(
-        "http://10.0.2.2:8080/api/teacher/schedule/$userId",
+        '${ApiConfig.baseUrl}/api/teacher/schedule/$userId',
+        options: Options(headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+        }),
       );
 
       if (response.statusCode == 200) {
         return List<TeacherSchedule>.from(
-          response.data.map(
-                (item) => TeacherSchedule.fromJson(item),
+          (response.data as List).map(
+            (item) => TeacherSchedule.fromJson(item as Map<String, dynamic>),
           ),
         );
-      } else {
-        throw Exception("Không lấy được thời khóa biểu");
       }
+      throw Exception('Không lấy được thời khóa biểu');
     } catch (e) {
-      throw Exception(
-        "Lỗi gọi API Teacher Schedule: $e",
-      );
+      throw Exception('Lỗi gọi API Teacher Schedule: $e');
     }
   }
 }

@@ -8,5 +8,10 @@ import java.util.List;
 
 @Repository
 public interface TimeSlotRepository extends JpaRepository<TimeSlot, Integer> {
-    List<TimeSlot> findByStatusOrderByStartTimeAsc(String status);
+
+	List<TimeSlot> findByStatusOrderByStartTimeAsc(String status);
+
+	boolean existsBySlotCode(String slotCode);
+
+	boolean existsBySlotCodeAndTimeSlotIdNot(String slotCode, Integer timeSlotId);
 }

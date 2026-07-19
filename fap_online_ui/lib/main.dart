@@ -18,6 +18,13 @@ import 'features/staff/presentation/providers/staff_dashboard_provider.dart';
 import 'features/staff/presentation/providers/staff_class_provider.dart';
 import 'features/staff/presentation/providers/staff_schedule_provider.dart';
 import 'features/staff/presentation/providers/staff_application_provider.dart';
+import 'features/staff/presentation/providers/staff_room_provider.dart';
+import 'features/staff/presentation/providers/staff_timeslot_provider.dart';
+import 'controllers/teacher_controller.dart';
+import 'controllers/teacher_schedule_controller.dart';
+import 'controllers/teacher_class_controller.dart';
+import 'controllers/attendance_controller.dart';
+import 'controllers/grade_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +45,14 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StaffClassProvider()),
         ChangeNotifierProvider(create: (_) => StaffScheduleProvider()),
         ChangeNotifierProvider(create: (_) => StaffApplicationProvider()),
+        ChangeNotifierProvider(create: (_) => StaffRoomProvider()),
+        ChangeNotifierProvider(create: (_) => StaffTimeSlotProvider()),
+        // Teacher Controllers
+        ChangeNotifierProvider(create: (_) => TeacherController()),
+        ChangeNotifierProvider(create: (_) => TeacherScheduleController()),
+        ChangeNotifierProvider(create: (_) => TeacherClassController()),
+        ChangeNotifierProvider(create: (_) => AttendanceController()),
+        ChangeNotifierProvider(create: (_) => GradeController()),
       ],
       child: const MyApp(),
     ),

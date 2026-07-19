@@ -61,6 +61,12 @@ class ApiEndpoints {
   static const String staffSchedules = '/staff/schedules';
   static String staffScheduleById(int scheduleId) => '/staff/schedules/$scheduleId';
 
+  // Rooms & TimeSlots
+  static const String staffRooms = '/staff/rooms';
+  static String staffRoomById(int roomId) => '/staff/rooms/$roomId';
+  static const String staffTimeSlots = '/staff/timeslots';
+  static String staffTimeSlotById(int timeSlotId) => '/staff/timeslots/$timeSlotId';
+
   // UC-18: Application management
   static const String staffApplications = '/staff/applications';
   static String staffApplicationById(int id) => '/staff/applications/$id';

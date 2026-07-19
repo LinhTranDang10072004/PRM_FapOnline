@@ -5,9 +5,8 @@ import '../../provider/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_shadows.dart';
-import '../../services/api_service.dart';
-import '../../config/api_endpoints.dart';
 import '../../utils/preferences.dart';
+import '../../utils/role_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,21 +49,6 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-
-  Future<bool> _checkIsStaff() async {
-    try {
-      await ApiService().get(ApiEndpoints.staffClasses);
-      return true;
-    } on ApiException catch (e) {
-      if (e.statusCode == 403 || e.statusCode == 401) {
-        return false;
-      }
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -79,16 +63,21 @@ class _LoginScreenState extends State<LoginScreen>
     if (!mounted) return;
 
     if (success) {
-      final isStaff = await _checkIsStaff();
+      final role = await PreferencesHelper.getRole();
       if (!mounted) return;
 
       setState(() => _isLoading = false);
 
-      if (isStaff) {
-        Navigator.pushReplacementNamed(context, '/staff-shell');
-      } else {
-        Navigator.pushReplacementNamed(context, '/parent-shell');
+      final route = RoleRouter.shellRouteFor(role);
+      if (route == '/login') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không xác định được vai trò tài khoản.'),
+          ),
+        );
+        return;
       }
+      Navigator.pushReplacementNamed(context, route);
     } else {
       setState(() => _isLoading = false);
     }
@@ -100,7 +89,6 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // ── Decorative gradient background ──────────────────────────────
           Positioned(
             top: -120,
             left: -80,
@@ -135,8 +123,6 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
           ),
-
-          // ── Main content ────────────────────────────────────────────────
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -148,14 +134,9 @@ class _LoginScreenState extends State<LoginScreen>
                   opacity: _fadeAnimation,
                   child: Column(
                     children: [
-                      // ── Logo section ────────────────────────────────────
                       _buildLogoSection(),
                       const SizedBox(height: 40),
-
-                      // ── Error banner ────────────────────────────────────
                       _buildErrorBanner(),
-
-                      // ── Login form ──────────────────────────────────────
                       _buildLoginForm(),
                     ],
                   ),
@@ -172,33 +153,33 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       children: [
         Container(
-          width: 100,
-          height: 100,
+          width: 120,
+          height: 120,
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryLight.withOpacity(0.15),
+                color: AppColors.primary.withOpacity(0.18),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.school_rounded,
-            size: 64,
-            color: AppColors.primary,
+          child: Image.asset(
+            AppColors.logoAsset,
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(height: 20),
         Text(
-          'PRM',
+          'FPT UNIVERSITY',
           style: AppTextStyles.h1.copyWith(
             color: AppColors.primary,
-            fontSize: 32,
+            fontSize: 26,
             fontWeight: FontWeight.w800,
-            letterSpacing: 2,
+            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(height: 6),
@@ -285,7 +266,6 @@ class _LoginScreenState extends State<LoginScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title inside card
             Text(
               'Đăng nhập',
               style: AppTextStyles.h2.copyWith(
@@ -298,8 +278,6 @@ class _LoginScreenState extends State<LoginScreen>
               style: AppTextStyles.caption,
             ),
             const SizedBox(height: 24),
-
-            // ── Email field ───────────────────────────────────────────
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
@@ -335,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen>
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: AppColors.primaryLight,
+                    color: AppColors.primary,
                     width: 1.5,
                   ),
                 ),
@@ -361,10 +339,7 @@ class _LoginScreenState extends State<LoginScreen>
                 return null;
               },
             ),
-
             const SizedBox(height: 16),
-
-            // ── Password field ────────────────────────────────────────
             TextFormField(
               controller: _passwordController,
               obscureText: _obscurePassword,
@@ -413,7 +388,7 @@ class _LoginScreenState extends State<LoginScreen>
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: AppColors.primaryLight,
+                    color: AppColors.primary,
                     width: 1.5,
                   ),
                 ),
@@ -439,48 +414,18 @@ class _LoginScreenState extends State<LoginScreen>
                 return null;
               },
             ),
-
-            const SizedBox(height: 8),
-
-            // ── Forgot password ───────────────────────────────────────
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  // Forgot password action
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Quên mật khẩu?',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primaryLight,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-
             const SizedBox(height: 24),
-
-            // ── Login button ──────────────────────────────────────────
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  disabledBackgroundColor: AppColors.accent.withOpacity(0.6),
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shadowColor: AppColors.accent.withOpacity(0.3),
+                  shadowColor: AppColors.primary.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -508,13 +453,6 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Footer note ───────────────────────────────────────────
-            Center(
-
             ),
           ],
         ),

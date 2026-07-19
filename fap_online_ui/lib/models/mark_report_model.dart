@@ -29,7 +29,10 @@ class CourseMarkSummaryModel {
     );
   }
 
-  bool get isPassed => result.toLowerCase() == 'passed';
+  bool get isPassed {
+    final value = result.toLowerCase();
+    return value == 'passed' || value == 'pass';
+  }
 }
 
 class SemesterMarkModel {

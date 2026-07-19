@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping("/api/staff/timeslots")
 @RequiredArgsConstructor
 @Tag(name = "Staff - Time Slots", description = "UC-17: Quản lý ca học")
-@PreAuthorize("hasRole('STAFF')")
+@PreAuthorize("hasAnyRole('STAFF','ADMIN')")
 public class TimeSlotController {
 
     private final TimeSlotService timeSlotService;

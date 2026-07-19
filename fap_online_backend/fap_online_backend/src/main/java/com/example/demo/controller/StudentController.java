@@ -22,7 +22,7 @@ public class StudentController {
 	}
 
 	@GetMapping("/timetable")
-	public ResponseEntity<WeeklyTimetableDto> getTimetable(
+	public ResponseEntity<StudentWeeklyTimetableDto> getTimetable(
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
@@ -40,8 +40,13 @@ public class StudentController {
 	}
 
 	@GetMapping("/transcript")
-	public ResponseEntity<TranscriptDto> getTranscript(@AuthenticationPrincipal AuthenticatedUser user) {
+	public ResponseEntity<StudentTranscriptDto> getTranscript(@AuthenticationPrincipal AuthenticatedUser user) {
 		return ResponseEntity.ok(studentService.getAcademicTranscript(user.getUserId()));
+	}
+
+	@GetMapping("/classes")
+	public ResponseEntity<List<StudentClassDto>> getMyClasses(@AuthenticationPrincipal AuthenticatedUser user) {
+		return ResponseEntity.ok(studentService.getMyClasses(user.getUserId()));
 	}
 
 	@GetMapping("/dashboard")
@@ -50,7 +55,7 @@ public class StudentController {
 	}
 
 	@GetMapping("/notifications")
-	public ResponseEntity<List<NotificationDto>> getNotifications(@AuthenticationPrincipal AuthenticatedUser user) {
+	public ResponseEntity<List<StudentNotificationDto>> getNotifications(@AuthenticationPrincipal AuthenticatedUser user) {
 		return ResponseEntity.ok(studentService.getNotifications(user.getUserId()));
 	}
 }

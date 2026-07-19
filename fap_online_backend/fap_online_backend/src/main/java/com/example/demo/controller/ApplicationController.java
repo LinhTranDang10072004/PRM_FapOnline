@@ -1,23 +1,17 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.ApplicationDto;
+import com.example.demo.dto.StudentApplicationDto;
 import com.example.demo.security.AuthenticatedUser;
-import com.example.demo.service.ApplicationService;
+import com.example.demo.service.StudentApplicationService;
 import com.example.demo.validation.ApplicationSubmitRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import com.example.demo.dto.ApplicationDTO;
-import com.example.demo.dto.ProcessApplicationRequest;
-import com.example.demo.service.ApplicationService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -25,22 +19,23 @@ import java.util.List;
 @RequestMapping("/api/applications")
 public class ApplicationController {
 
-	private final ApplicationService applicationService;
+	private final StudentApplicationService studentApplicationService;
 
-	public ApplicationController(ApplicationService applicationService) {
-		this.applicationService = applicationService;
+	public ApplicationController(StudentApplicationService studentApplicationService) {
+		this.studentApplicationService = studentApplicationService;
 	}
 
 	@GetMapping("/my")
-	public ResponseEntity<List<ApplicationDto>> getMyApplications(@AuthenticationPrincipal AuthenticatedUser user) {
-		return ResponseEntity.ok(applicationService.getMyApplications(user.getUserId()));
+	public ResponseEntity<List<StudentApplicationDto>> getMyApplications(
+			@AuthenticationPrincipal AuthenticatedUser user) {
+		return ResponseEntity.ok(studentApplicationService.getMyApplications(user.getUserId()));
 	}
 
 	@PostMapping
 	public ResponseEntity<?> submitApplication(
 			@AuthenticationPrincipal AuthenticatedUser user,
 			@Valid @RequestBody ApplicationSubmitRequest request) {
-		boolean success = applicationService.submitApplication(user.getUserId(), request);
+		boolean success = studentApplicationService.submitApplication(user.getUserId(), request);
 		return success
 				? ResponseEntity.ok("Application submitted")
 				: ResponseEntity.badRequest().body("Failed to submit");

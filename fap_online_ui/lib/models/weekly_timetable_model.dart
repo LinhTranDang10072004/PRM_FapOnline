@@ -78,9 +78,18 @@ class WeeklyTimetableModel {
   }
 
   TimetableModel? entryFor(String slotCode, String date) {
+    final normalizedDate = _normalizeDate(date);
     final matches = entries.where(
-      (entry) => entry.slotCode == slotCode && entry.scheduleDate == date,
+      (entry) =>
+          entry.slotCode == slotCode &&
+          _normalizeDate(entry.scheduleDate) == normalizedDate,
     );
     return matches.isEmpty ? null : matches.first;
+  }
+
+  static String _normalizeDate(String? value) {
+    if (value == null || value.isEmpty) return '';
+    final text = value.replaceFirst('T', ' ');
+    return text.length >= 10 ? text.substring(0, 10) : text;
   }
 }

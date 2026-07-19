@@ -1,117 +1,62 @@
 import 'package:dio/dio.dart';
 
+import '../config/api_config.dart';
 import '../models/grade_item_model.dart';
-
+import 'auth_service.dart';
 
 class GradeService {
+  final Dio dio = Dio();
+  final AuthService _authService = AuthService();
 
-
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: "http://10.0.2.2:8080",
-    ),
-  );
-
-
-
-  // ==========================================
-  // GET GRADES BY CLASS
-  // ==========================================
+  Future<Options> _authOptions() async {
+    final token = await _authService.getToken();
+    return Options(
+      headers: {
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
+  }
 
   Future<List<GradeItemModel>> getGradesByClass(
-      int classId,
-      int teacherId,
-      ) async {
-
-
+    int classId,
+    int teacherId,
+  ) async {
     final response = await dio.get(
-  "/api/student-grades/class/$classId/$teacherId",
-);
+      '${ApiConfig.baseUrl}/api/student-grades/class/$classId/$teacherId',
+      options: await _authOptions(),
+    );
 
-
-    List data = response.data;
-
-
+    final List data = response.data as List;
     return data
-        .map(
-          (e) => GradeItemModel.fromJson(e),
-        )
+        .map((e) => GradeItemModel.fromJson(e as Map<String, dynamic>))
         .toList();
-
   }
 
-
-
-
-  // ==========================================
-  // UPDATE GRADE
-  // ==========================================
-
-  Future<void> updateGrade(
-      int id,
-      double score,
-      String status
-      ) async {
-
-
+  Future<void> updateGrade(int id, double score, String status) async {
     await dio.put(
-      "/api/student-grades/$id",
-
+      '${ApiConfig.baseUrl}/api/student-grades/$id',
       data: {
-
-        "score": score,
-
-        "status": status,
-
+        'score': score,
+        'status': status,
       },
-
+      options: await _authOptions(),
     );
-
   }
 
-
-
-
-
-  // ==========================================
-  // CREATE GRADE
-  // ==========================================
-
-  Future<GradeItemModel> createGrade(
-      Map<String, dynamic> data
-      ) async {
-
-
+  Future<GradeItemModel> createGrade(Map<String, dynamic> data) async {
     final response = await dio.post(
-      "/api/student-grades",
+      '${ApiConfig.baseUrl}/api/student-grades',
       data: data,
+      options: await _authOptions(),
     );
 
-
-    return GradeItemModel.fromJson(
-      response.data,
-    );
-
+    return GradeItemModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-
-
-
-
-  // ==========================================
-  // DELETE GRADE
-  // ==========================================
-
-  Future<void> deleteGrade(
-      int id
-      ) async {
-
-
+  Future<void> deleteGrade(int id) async {
     await dio.delete(
-      "/api/student-grades/$id",
+      '${ApiConfig.baseUrl}/api/student-grades/$id',
+      options: await _authOptions(),
     );
-
   }
-
-
 }

@@ -5,14 +5,14 @@ import '../utils/preferences.dart';
 import 'api_service.dart';
 
 class AuthService {
-
   final ApiService _apiService = ApiService();
 
   Future<AuthResponse> login(LoginRequest request) async {
-    final response = await _apiService.post(ApiEndpoints.login, request.toJson());
-    final authResponse = AuthResponse.fromJson(response as Map<String, dynamic>);
+    final response =
+        await _apiService.post(ApiEndpoints.login, request.toJson());
+    final authResponse =
+        AuthResponse.fromJson(response as Map<String, dynamic>);
     await _persistSession(authResponse);
-
     return authResponse;
   }
 
@@ -33,13 +33,15 @@ class AuthService {
     return current;
   }
 
-  Future<String?> getUsername() {
-    return PreferencesHelper.getUsername();
-  }
+  Future<String?> getUsername() => PreferencesHelper.getUsername();
 
-  Future<String?> getFullName() {
-    return PreferencesHelper.getFullName();
-  }
+  Future<String?> getFullName() => PreferencesHelper.getFullName();
+
+  Future<int?> getUserId() => PreferencesHelper.getUserId();
+
+  Future<String?> getRole() => PreferencesHelper.getRole();
+
+  Future<String?> getToken() => PreferencesHelper.getToken();
 
   Future<void> logout() async {
     try {
@@ -48,38 +50,33 @@ class AuthService {
     await PreferencesHelper.clearUserData();
   }
 
-
   Future<void> _persistSession(AuthResponse authResponse) async {
     final token = authResponse.token;
     final username = authResponse.username;
     final fullName = authResponse.fullName;
+    final userId = authResponse.userId;
+    final role = authResponse.role;
 
     if (token != null && token.isNotEmpty) {
       await PreferencesHelper.saveToken(token);
     }
-    if (auth.userId != null) {
-      await prefs.setInt(_userIdKey, auth.userId!);
+    if (userId != null) {
+      await PreferencesHelper.saveUserId(userId);
     }
-    if (auth.fullName != null) {
-      await prefs.setString(_fullNameKey, auth.fullName!);
-
     if (username != null && username.isNotEmpty) {
       await PreferencesHelper.saveUsername(username);
     }
     if (fullName != null && fullName.isNotEmpty) {
       await PreferencesHelper.saveFullName(fullName);
-
     }
-
-  Future<int?> getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    return prefs.getInt(_userIdKey);
+    if (role != null && role.isNotEmpty) {
+      await PreferencesHelper.saveRole(role);
+    } else {
+      await _tryFetchAndSaveRole();
+    }
   }
 
-  Map<String, dynamic> _decodeBody(String raw) {
-    if (raw.isEmpty) return {};
-
+  Future<void> _tryFetchAndSaveRole() async {
     try {
       final meData = await _apiService.get(ApiEndpoints.me);
       if (meData is Map<String, dynamic>) {
@@ -90,8 +87,6 @@ class AuthService {
           await PreferencesHelper.saveRole(role);
         }
       }
-    } catch (_) {
-
-    }
+    } catch (_) {}
   }
 }

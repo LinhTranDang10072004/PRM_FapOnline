@@ -101,7 +101,7 @@ class AppTheme {
       // ── Elevated Button ─────────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
           shadowColor: Colors.transparent,
@@ -180,7 +180,7 @@ class AppTheme {
 
       // ── Floating Action Button ──────────────────────────────────────────
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
         shape: StadiumBorder(),

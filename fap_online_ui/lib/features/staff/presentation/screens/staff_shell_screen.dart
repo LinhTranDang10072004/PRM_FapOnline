@@ -8,6 +8,7 @@ import '../providers/staff_application_provider.dart';
 import 'staff_dashboard_screen.dart';
 import 'staff_classes_screen.dart';
 import 'staff_schedule_screen.dart';
+import 'staff_catalog_screen.dart';
 import 'staff_applications_screen.dart';
 
 class StaffShellScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _StaffShellScreenState extends State<StaffShellScreen> {
     StaffDashboardScreen(),
     StaffClassesScreen(),
     StaffScheduleScreen(),
+    StaffCatalogScreen(),
     StaffApplicationsScreen(),
   ];
 
@@ -75,6 +77,10 @@ class _StaffShellScreenState extends State<StaffShellScreen> {
             const BottomNavigationBarItem(
               icon: Icon(Icons.calendar_month_rounded),
               label: 'Lịch học',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.meeting_room_rounded),
+              label: 'Phòng/Ca',
             ),
             BottomNavigationBarItem(
               icon: Stack(

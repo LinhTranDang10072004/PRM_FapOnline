@@ -21,6 +21,8 @@ public class GradeDto {
     public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
     public BigDecimal getFinalScore() { return finalScore; }
     public void setFinalScore(BigDecimal finalScore) { this.finalScore = finalScore; }
+    public Double getAttendancePercent() { return attendancePercent; }
+    public void setAttendancePercent(Double attendancePercent) { this.attendancePercent = attendancePercent; }
     public String getResult() { return result; }
     public void setResult(String result) { this.result = result; }
     public List<ComponentGrade> getComponents() { return components; }

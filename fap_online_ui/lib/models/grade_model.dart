@@ -1,4 +1,4 @@
-﻿import 'component_grade_model.dart';
+import 'component_grade_model.dart';
 
 export 'component_grade_model.dart';
 
@@ -39,5 +39,8 @@ class GradeDetailModel {
     );
   }
 
-  bool get isPassed => result.toLowerCase() == 'passed';
+  bool get isPassed {
+    final value = result.toLowerCase();
+    return value == 'passed' || value == 'pass';
+  }
 }

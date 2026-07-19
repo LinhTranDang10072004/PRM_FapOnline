@@ -5,6 +5,7 @@ class PreferencesHelper {
   static const String _usernameKey = 'username';
   static const String _fullNameKey = 'full_name';
   static const String _roleKey = 'user_role';
+  static const String _userIdKey = 'user_id';
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,6 +48,7 @@ class PreferencesHelper {
     await prefs.remove(_usernameKey);
     await prefs.remove(_fullNameKey);
     await prefs.remove(_roleKey);
+    await prefs.remove(_userIdKey);
   }
 
   static Future<void> saveRole(String role) async {
@@ -57,5 +59,15 @@ class PreferencesHelper {
   static Future<String?> getRole() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_roleKey);
+  }
+
+  static Future<void> saveUserId(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userIdKey, userId);
+  }
+
+  static Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userIdKey);
   }
 }

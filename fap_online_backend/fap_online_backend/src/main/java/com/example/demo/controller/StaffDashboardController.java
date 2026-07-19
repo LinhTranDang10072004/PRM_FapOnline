@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/staff/dashboard")
 @RequiredArgsConstructor
 @Tag(name = "Staff - Dashboard")
-@PreAuthorize("hasRole('STAFF')")
+@PreAuthorize("hasAnyRole('STAFF','ADMIN')")
 public class StaffDashboardController {
 
     private final StaffDashboardService staffDashboardService;

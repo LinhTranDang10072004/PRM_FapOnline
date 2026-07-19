@@ -18,7 +18,7 @@ public class TeacherDashboardResponse {
 
     private List<TeacherClassDTO> classes;
 
-    private List<TodayScheduleDTO> todaySchedule;
+    private List<TeacherTodayScheduleDTO> todaySchedule;
 
 
     public TeacherDashboardResponse(
@@ -29,7 +29,7 @@ public class TeacherDashboardResponse {
             Integer pendingAttendance,
             Integer pendingGrades,
             List<TeacherClassDTO> classes,
-            List<TodayScheduleDTO> todaySchedule) {
+            List<TeacherTodayScheduleDTO> todaySchedule) {
 
         this.teacherId = teacherId;
         this.teacherName = teacherName;
@@ -52,7 +52,7 @@ public class TeacherDashboardResponse {
             Integer pendingAttendance,
             Integer pendingGrades,
             List<TeacherClassDTO> classes,
-            List<TodayScheduleDTO> todaySchedule) {
+            List<TeacherTodayScheduleDTO> todaySchedule) {
 
         this.teacherName = teacherName;
         this.totalClasses = totalClasses;
@@ -126,11 +126,11 @@ public class TeacherDashboardResponse {
     }
 
 
-    public List<TodayScheduleDTO> getTodaySchedule() {
+    public List<TeacherTodayScheduleDTO> getTodaySchedule() {
         return todaySchedule;
     }
 
-    public void setTodaySchedule(List<TodayScheduleDTO> todaySchedule) {
+    public void setTodaySchedule(List<TeacherTodayScheduleDTO> todaySchedule) {
         this.todaySchedule = todaySchedule;
     }
 }

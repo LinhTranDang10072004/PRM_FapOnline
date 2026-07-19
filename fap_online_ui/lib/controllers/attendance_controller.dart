@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/attendance_model.dart';
-import '../services/attendance_service.dart';
+import '../services/teacher_attendance_service.dart';
 
 class AttendanceController extends ChangeNotifier {
-  final AttendanceService attendanceService = AttendanceService();
+  final TeacherAttendanceService attendanceService = TeacherAttendanceService();
 
   List<AttendanceStudent> students = [];
 

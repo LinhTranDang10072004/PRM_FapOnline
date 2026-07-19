@@ -1,5 +1,5 @@
 package com.example.demo.service;
-import com.example.demo.dto.ProfileDto;
+import com.example.demo.dto.StudentProfileDto;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +11,11 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public ProfileDto getProfile(String username) {
+    public StudentProfileDto getProfile(String username) {
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isPresent()) {
             User u = userOpt.get();
-            ProfileDto dto = new ProfileDto();
+            StudentProfileDto dto = new StudentProfileDto();
             dto.setUsername(u.getUsername());
             dto.setFullName(u.getFullName());
             dto.setEmail(u.getEmail());
@@ -29,7 +29,7 @@ public class UserService {
         return null;
     }
 
-    public boolean updateProfile(String username, ProfileDto dto) {
+    public boolean updateProfile(String username, StudentProfileDto dto) {
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isPresent()) {
             User u = userOpt.get();
