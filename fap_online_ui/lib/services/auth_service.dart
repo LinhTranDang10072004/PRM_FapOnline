@@ -5,6 +5,7 @@ import '../utils/preferences.dart';
 import 'api_service.dart';
 
 class AuthService {
+
   final ApiService _apiService = ApiService();
 
   Future<AuthResponse> login(LoginRequest request) async {
@@ -47,6 +48,7 @@ class AuthService {
     await PreferencesHelper.clearUserData();
   }
 
+
   Future<void> _persistSession(AuthResponse authResponse) async {
     final token = authResponse.token;
     final username = authResponse.username;
@@ -55,14 +57,29 @@ class AuthService {
     if (token != null && token.isNotEmpty) {
       await PreferencesHelper.saveToken(token);
     }
+    if (auth.userId != null) {
+      await prefs.setInt(_userIdKey, auth.userId!);
+    }
+    if (auth.fullName != null) {
+      await prefs.setString(_fullNameKey, auth.fullName!);
+
     if (username != null && username.isNotEmpty) {
       await PreferencesHelper.saveUsername(username);
     }
     if (fullName != null && fullName.isNotEmpty) {
       await PreferencesHelper.saveFullName(fullName);
+
     }
 
-    // Fetch role via /auth/me endpoint since AuthResponse doesn't include role
+  Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    return prefs.getInt(_userIdKey);
+  }
+
+  Map<String, dynamic> _decodeBody(String raw) {
+    if (raw.isEmpty) return {};
+
     try {
       final meData = await _apiService.get(ApiEndpoints.me);
       if (meData is Map<String, dynamic>) {
