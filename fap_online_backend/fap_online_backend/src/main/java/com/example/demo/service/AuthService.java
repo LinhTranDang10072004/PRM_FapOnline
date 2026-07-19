@@ -24,7 +24,7 @@ public class AuthService {
 	}
 
 	public AuthResponse login(LoginRequest request) {
-		User user = userRepository.findByUsername(request.getUsername())
+		User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai username hoac password"));
 
 		if (!"Active".equalsIgnoreCase(user.getStatus())) {

@@ -1,78 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'services/auth_service.dart';
-import 'controllers/teacher_schedule_controller.dart';
-import 'controllers/teacher_controller.dart';
-import 'controllers/attendance_controller.dart';
-import 'controllers/grade_controller.dart';
-import'controllers/teacher_class_controller.dart';
-void main() {
+
+import 'config/app_routes.dart';
+import 'config/constants.dart';
+import 'provider/auth_provider.dart';
+import 'provider/dashboard_provider.dart';
+import 'provider/parent_child_provider.dart';
+import 'provider/profile_provider.dart';
+import 'provider/attendance_provider.dart';
+import 'provider/transcript_provider.dart';
+import 'provider/student_fee_provider.dart';
+import 'theme/app_theme.dart';
+
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'features/staff/presentation/providers/staff_dashboard_provider.dart';
+import 'features/staff/presentation/providers/staff_class_provider.dart';
+import 'features/staff/presentation/providers/staff_schedule_provider.dart';
+import 'features/staff/presentation/providers/staff_application_provider.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FapOnlineApp());
-}
+  await initializeDateFormatting('vi', null);
 
-class FapOnlineApp extends StatelessWidget {
-  const FapOnlineApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
+  runApp(
+    MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => TeacherController()),
-
-        ChangeNotifierProvider(create: (_) => TeacherScheduleController()),
-
-        ChangeNotifierProvider(create: (_) => AttendanceController()),
-
-        ChangeNotifierProvider(create: (_) => GradeController()),
-        ChangeNotifierProvider(create: (_) => TeacherClassController()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider(create: (_) => ParentChildProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+        ChangeNotifierProvider(create: (_) => TranscriptProvider()),
+        ChangeNotifierProvider(create: (_) => StudentFeeProvider()),
+        // Staff Providers
+        ChangeNotifierProvider(create: (_) => StaffDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => StaffClassProvider()),
+        ChangeNotifierProvider(create: (_) => StaffScheduleProvider()),
+        ChangeNotifierProvider(create: (_) => StaffApplicationProvider()),
       ],
-      child: MaterialApp(
-        title: 'FAP Online',
-        debugShowCheckedModeBanner: false,
-
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-          useMaterial3: true,
-          inputDecorationTheme: const InputDecorationTheme(filled: true),
-        ),
-        home: const AuthGate(),
-      ),
-    );
-  }
+      child: const MyApp(),
+    ),
+  );
 }
 
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  final _authService = AuthService();
-  late Future<bool> _sessionFuture;
-  @override
-  void initState() {
-    super.initState();
-    _sessionFuture = _authService.isLoggedIn();
-  }
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _sessionFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (snapshot.data == true) {
-          return const HomeScreen();
-        }
-        return const LoginScreen();
-      },
+    return MaterialApp(
+      title: Constants.appName,
+      theme: AppTheme.lightTheme,
+      initialRoute: AppRoutes.start,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

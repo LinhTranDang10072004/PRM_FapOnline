@@ -1,85 +1,60 @@
-import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../models/attendance_model.dart';
-import 'auth_service.dart';
+import '../config/api_endpoints.dart';
+import '../models/response/attendance_dto.dart';
+import 'api_service.dart';
 
 class AttendanceService {
+  final ApiService _apiService = ApiService();
 
-  // Đổi thành IP backend của bạn nếu chạy trên điện thoại
-  static const String baseUrl = "http://10.0.2.2:8080";
-
-  final AuthService authService = AuthService();
-
-  // ==========================================
-  // Lấy danh sách sinh viên của một buổi học
-  // ==========================================
-  Future<List<AttendanceStudent>> getAttendance(
-      int scheduleId) async {
-
-    final token = await authService.getToken();
-
-    final response = await http.get(
-      Uri.parse(
-          "$baseUrl/attendance/$scheduleId"),
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-    );
-
-    if (response.statusCode == 200) {
-
-      final List data =
-          jsonDecode(response.body);
-
-      return data
-          .map(
-            (e) => AttendanceStudent.fromJson(e),
-          )
-          .toList();
-
+  Future<List<AttendanceDTO>> getStudentAttendance(
+    int studentId,
+    String startDate,
+    String endDate,
+  ) async {
+    try {
+      final endpoint = '${ApiEndpoints.attendanceStudent(studentId)}?startDate=$startDate&endDate=$endDate';
+      final response = await _apiService.get(endpoint);
+      
+      if (response is List) {
+        return response
+            .map((item) => AttendanceDTO.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching attendance: $e');
+      return [];
     }
-
-    throw Exception(
-        "Không lấy được danh sách điểm danh");
   }
 
-  // ==========================================
-  // Lưu điểm danh
-  // ==========================================
-  Future<void> saveAttendance({
-  required int scheduleId,
-  required int userId,
-  required List<AttendanceStudent> students,
-})async {
-
-    final token = await authService.getToken();
-
-    final body = {
-      "scheduleId": scheduleId,
-      "userId": userId,
+  Future<List<AttendanceDTO>> getMonthlyAttendance(
+    int studentId,
+    int month,
+    int year,
+  ) async {
+    try {
+      final endpoint = '${ApiEndpoints.attendanceMonthly(studentId)}?month=$month&year=$year';
+      final response = await _apiService.get(endpoint);
       
-      "attendanceList":
-          students.map((e) => e.toJson()).toList(),
-    };
+      if (response is List) {
+        return response
+            .map((item) => AttendanceDTO.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching monthly attendance: $e');
+      return [];
+    }
+  }
 
-    final response = await http.post(
-      Uri.parse(
-          "$baseUrl/attendance/save"),
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode != 200) {
-
-      throw Exception(
-          "Lưu điểm danh thất bại");
-
+  Future<Map<String, dynamic>> getAttendanceStats(int studentId) async {
+    try {
+      final response = await _apiService.get(ApiEndpoints.attendanceStats(studentId));
+      return response is Map ? response as Map<String, dynamic> : {};
+    } catch (e) {
+      print('Error fetching attendance stats: $e');
+      return {};
     }
   }
 }
