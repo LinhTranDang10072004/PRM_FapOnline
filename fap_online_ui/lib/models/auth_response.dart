@@ -1,4 +1,5 @@
 class AuthResponse {
+  final int? userId;
   final String? token;
   final String? username;
   final String? fullName;
@@ -6,6 +7,7 @@ class AuthResponse {
   final String? role;
 
   AuthResponse({
+    this.userId,
     this.token,
     this.username,
     this.fullName,
@@ -15,6 +17,7 @@ class AuthResponse {
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
+      userId: json['userId'],
       token: json['token'] as String?,
       username: json['username'] as String?,
       fullName: json['fullName'] as String?,

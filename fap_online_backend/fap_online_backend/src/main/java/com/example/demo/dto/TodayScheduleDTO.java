@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -16,3 +17,4 @@ public class TodayScheduleDTO {
     private String roomName;
     private String timeSlot;
 }
+
