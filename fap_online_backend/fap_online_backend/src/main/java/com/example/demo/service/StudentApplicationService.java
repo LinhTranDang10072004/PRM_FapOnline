@@ -2,8 +2,11 @@ package com.example.demo.service;
 
 import com.example.demo.dto.StudentApplicationDto;
 import com.example.demo.entity.Application;
+import com.example.demo.entity.ApplicationType;
 import com.example.demo.entity.Student;
+import com.example.demo.exception.ValidationException;
 import com.example.demo.repository.ApplicationRepository;
+import com.example.demo.repository.ApplicationTypeRepository;
 import com.example.demo.repository.StudentRepository;
 import com.example.demo.validation.ApplicationSubmitRequest;
 import org.springframework.stereotype.Service;
@@ -17,13 +20,20 @@ public class StudentApplicationService {
 
 	private final ApplicationRepository applicationRepository;
 	private final StudentRepository studentRepository;
+	private final ApplicationTypeRepository applicationTypeRepository;
 
 	public StudentApplicationService(
 			ApplicationRepository applicationRepository,
-			StudentRepository studentRepository
+			StudentRepository studentRepository,
+			ApplicationTypeRepository applicationTypeRepository
 	) {
 		this.applicationRepository = applicationRepository;
 		this.studentRepository = studentRepository;
+		this.applicationTypeRepository = applicationTypeRepository;
+	}
+
+	public List<ApplicationType> getActiveTypes() {
+		return applicationTypeRepository.findByIsActiveTrue();
 	}
 
 	public List<StudentApplicationDto> getMyApplications(Integer userId) {
@@ -47,6 +57,12 @@ public class StudentApplicationService {
 	public boolean submitApplication(Integer userId, ApplicationSubmitRequest req) {
 		Student student = studentRepository.findByUserId(userId)
 				.orElseThrow(() -> new RuntimeException("Student not found"));
+
+		ApplicationType type = applicationTypeRepository.findById(req.getApplicationTypeId())
+				.orElseThrow(() -> new ValidationException("Loại đơn không hợp lệ"));
+		if (!Boolean.TRUE.equals(type.getIsActive())) {
+			throw new ValidationException("Loại đơn đang không hoạt động");
+		}
 
 		Application app = new Application();
 		app.setStudentId(student.getStudentId());

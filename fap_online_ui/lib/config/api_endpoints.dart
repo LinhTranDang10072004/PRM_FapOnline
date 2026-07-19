@@ -41,6 +41,19 @@ class ApiEndpoints {
   static String feesSemester(int studentId, int semesterId) => '/fees/semester/$studentId/$semesterId';
   static String feesTotalUnpaid(int studentId) => '/fees/total-unpaid/$studentId';
 
+  // ── Admin ───────────────────────────────────────────────────────────────
+  static const String adminDashboard = '/admin/dashboard';
+  static const String adminUsers = '/admin/users';
+  static String adminUserById(int userId) => '/admin/users/$userId';
+  static String adminUserLock(int userId) => '/admin/users/$userId/lock';
+  static String adminUserUnlock(int userId) => '/admin/users/$userId/unlock';
+  static const String adminRoles = '/admin/roles';
+  static String adminRoleById(int roleId) => '/admin/roles/$roleId';
+  static const String adminRoleAssign = '/admin/roles/assign';
+  static const String adminRoleUnassign = '/admin/roles/unassign';
+  static const String adminProfile = '/admin/profile';
+  static const String adminChangePassword = '/admin/profile/change-password';
+
   // ── Staff ───────────────────────────────────────────────────────────────
   // References
   static const String staffReferenceTeachers = '/staff/references/teachers';

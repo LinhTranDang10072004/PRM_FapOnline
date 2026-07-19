@@ -42,11 +42,14 @@ public class DataSeeder implements CommandLineRunner {
     private final FeePaymentRepository feePaymentRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationRecipientRepository notificationRecipientRepository;
+    private final ApplicationTypeRepository applicationTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(String... args) {
+        seedApplicationTypesIfEmpty();
+
         if (userRepository.count() > 0) {
             System.out.println("Database already contains users. Skipping seed.");
             return;
@@ -600,6 +603,24 @@ public class DataSeeder implements CommandLineRunner {
     // ═══════════════════════════════════════════════════════════════════
     // Helper methods
     // ═══════════════════════════════════════════════════════════════════
+
+    private void seedApplicationTypesIfEmpty() {
+        if (applicationTypeRepository.count() > 0) return;
+        saveApplicationType("Xin nghỉ học", "Đơn xin nghỉ phép / nghỉ học có lý do");
+        saveApplicationType("Xin miễn giảm học phí", "Đơn đề nghị miễn giảm học phí");
+        saveApplicationType("Xin xác nhận sinh viên", "Đơn xin giấy xác nhận sinh viên");
+        saveApplicationType("Khiếu nại điểm", "Đơn khiếu nại / phúc khảo điểm");
+        saveApplicationType("Khác", "Các loại đơn khác");
+        System.out.println("Seeded ApplicationTypes.");
+    }
+
+    private void saveApplicationType(String name, String desc) {
+        ApplicationType t = new ApplicationType();
+        t.setTypeName(name);
+        t.setDescription(desc);
+        t.setIsActive(true);
+        applicationTypeRepository.save(t);
+    }
 
     private Role saveRole(String name, String desc, LocalDateTime now) {
         Role r = new Role();

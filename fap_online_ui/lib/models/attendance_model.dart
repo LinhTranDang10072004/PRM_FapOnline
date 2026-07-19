@@ -3,23 +3,44 @@ class AttendanceModel {
   final String? subjectName;
   final int totalSlots;
   final int absentSlots;
+  final int presentSlots;
   final double absentPercent;
+  final double presentPercent;
+  final int? semesterId;
+  final String? semesterCode;
+  final String? semesterName;
 
   AttendanceModel({
     this.subjectCode,
     this.subjectName,
     required this.totalSlots,
     required this.absentSlots,
+    required this.presentSlots,
     required this.absentPercent,
+    required this.presentPercent,
+    this.semesterId,
+    this.semesterCode,
+    this.semesterName,
   });
 
   factory AttendanceModel.fromJson(Map<String, dynamic> json) {
+    final total = json['totalSlots'] ?? 20;
+    final absent = json['absentSlots'] ?? 0;
+    final present = json['presentSlots'] ?? (total - absent);
+    final presentPct = (json['presentPercent'] as num?)?.toDouble();
+    final absentPct = (json['absentPercent'] as num?)?.toDouble();
+
     return AttendanceModel(
       subjectCode: json['subjectCode'],
       subjectName: json['subjectName'],
-      totalSlots: json['totalSlots'] ?? 0,
-      absentSlots: json['absentSlots'] ?? 0,
-      absentPercent: (json['absentPercent'] as num?)?.toDouble() ?? 0.0,
+      totalSlots: total is int ? total : int.tryParse('$total') ?? 20,
+      absentSlots: absent is int ? absent : int.tryParse('$absent') ?? 0,
+      presentSlots: present is int ? present : int.tryParse('$present') ?? 0,
+      absentPercent: absentPct ?? 0.0,
+      presentPercent: presentPct ?? 0.0,
+      semesterId: json['semesterId'],
+      semesterCode: json['semesterCode']?.toString(),
+      semesterName: json['semesterName']?.toString(),
     );
   }
 }

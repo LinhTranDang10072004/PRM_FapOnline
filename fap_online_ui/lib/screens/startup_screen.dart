@@ -52,6 +52,7 @@ class _StartupScreenState extends State<StartupScreen>
     final token = await PreferencesHelper.getToken();
     if (!mounted) return;
 
+    // Đã login rồi → vào app theo role
     if (token != null && token.isNotEmpty) {
       var role = await PreferencesHelper.getRole();
       if (role == null || role.isEmpty) {
@@ -65,6 +66,17 @@ class _StartupScreenState extends State<StartupScreen>
         context,
         route == '/login' ? '/login' : route,
       );
+      return;
+    }
+
+    // Chưa login:
+    // - chưa chọn campus → /campus
+    // - đã chọn campus   → /login
+    final campusCode = await PreferencesHelper.getCampusCode();
+    if (!mounted) return;
+
+    if (campusCode == null || campusCode.isEmpty) {
+      Navigator.pushReplacementNamed(context, '/campus');
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }

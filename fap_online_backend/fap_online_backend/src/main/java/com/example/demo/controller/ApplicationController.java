@@ -25,6 +25,19 @@ public class ApplicationController {
 		this.studentApplicationService = studentApplicationService;
 	}
 
+	@GetMapping("/types")
+	public ResponseEntity<?> getApplicationTypes() {
+		return ResponseEntity.ok(
+				studentApplicationService.getActiveTypes().stream()
+						.map(t -> java.util.Map.of(
+								"applicationTypeId", t.getApplicationTypeId(),
+								"typeName", t.getTypeName(),
+								"description", t.getDescription() != null ? t.getDescription() : ""
+						))
+						.toList()
+		);
+	}
+
 	@GetMapping("/my")
 	public ResponseEntity<List<StudentApplicationDto>> getMyApplications(
 			@AuthenticationPrincipal AuthenticatedUser user) {
@@ -37,7 +50,7 @@ public class ApplicationController {
 			@Valid @RequestBody ApplicationSubmitRequest request) {
 		boolean success = studentApplicationService.submitApplication(user.getUserId(), request);
 		return success
-				? ResponseEntity.ok("Application submitted")
-				: ResponseEntity.badRequest().body("Failed to submit");
+				? ResponseEntity.ok(java.util.Map.of("message", "Application submitted"))
+				: ResponseEntity.badRequest().body(java.util.Map.of("message", "Failed to submit"));
 	}
 }

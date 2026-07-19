@@ -10,6 +10,9 @@ class GradeDetailModel {
   final double? finalScore;
   final double attendancePercent;
   final String result;
+  final int? semesterId;
+  final String? semesterCode;
+  final String? semesterName;
   final List<ComponentGradeModel> components;
 
   GradeDetailModel({
@@ -20,6 +23,9 @@ class GradeDetailModel {
     this.finalScore,
     required this.attendancePercent,
     required this.result,
+    this.semesterId,
+    this.semesterCode,
+    this.semesterName,
     required this.components,
   });
 
@@ -32,6 +38,9 @@ class GradeDetailModel {
       finalScore: (json['finalScore'] as num?)?.toDouble(),
       attendancePercent: (json['attendancePercent'] as num?)?.toDouble() ?? 0,
       result: json['result'] ?? 'Not Passed',
+      semesterId: json['semesterId'],
+      semesterCode: json['semesterCode']?.toString(),
+      semesterName: json['semesterName']?.toString(),
       components: (json['components'] as List<dynamic>?)
               ?.map((e) => ComponentGradeModel.fromJson(e))
               .toList() ??

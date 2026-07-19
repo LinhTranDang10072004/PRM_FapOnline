@@ -112,7 +112,11 @@ class _MarkReportScreenState extends State<MarkReportScreen> {
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
-                label: Text(semester.semesterCode),
+                label: Text(
+                  semester.semesterCode.isNotEmpty
+                      ? semester.semesterCode
+                      : semester.semesterName,
+                ),
                 selected: isSelected,
                 onSelected: (_) => setState(() => _selectedSemesterIndex = index),
                 selectedColor: _orange,
@@ -143,6 +147,12 @@ class _MarkReportScreenState extends State<MarkReportScreen> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
+          if (course.classId <= 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lớp này chưa có mã hợp lệ')),
+            );
+            return;
+          }
           Navigator.push(
             context,
             MaterialPageRoute(

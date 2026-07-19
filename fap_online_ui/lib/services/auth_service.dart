@@ -4,14 +4,19 @@ import '../models/request/login_request.dart';
 import '../utils/preferences.dart';
 import 'api_service.dart';
 
+/// Gọi API đăng nhập / đăng xuất.
 class AuthService {
   final ApiService _apiService = ApiService();
 
   Future<AuthResponse> login(LoginRequest request) async {
-    final response =
-        await _apiService.post(ApiEndpoints.login, request.toJson());
-    final authResponse =
-        AuthResponse.fromJson(response as Map<String, dynamic>);
+    // tra ve sau khi dang nhap
+    final response = await _apiService.post(
+      ApiEndpoints.login,
+      request.toJson(),
+    ); // lay enpoint login
+    final authResponse = AuthResponse.fromJson(
+      response as Map<String, dynamic>,
+    );
     await _persistSession(authResponse);
     return authResponse;
   }
@@ -26,6 +31,7 @@ class AuthService {
   }
 
   Future<AuthResponse?> restoreSession() async {
+    // khôi phục phiên đăng nhập
     final current = await me();
     if (current != null) {
       await _persistSession(current);
@@ -81,7 +87,8 @@ class AuthService {
       final meData = await _apiService.get(ApiEndpoints.me);
       if (meData is Map<String, dynamic>) {
         final roles = meData['roles'] as List<dynamic>?;
-        final role = meData['role'] as String? ??
+        final role =
+            meData['role'] as String? ??
             (roles?.isNotEmpty == true ? roles!.first as String? : null);
         if (role != null && role.isNotEmpty) {
           await PreferencesHelper.saveRole(role);

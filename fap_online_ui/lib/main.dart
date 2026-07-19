@@ -20,6 +20,10 @@ import 'features/staff/presentation/providers/staff_schedule_provider.dart';
 import 'features/staff/presentation/providers/staff_application_provider.dart';
 import 'features/staff/presentation/providers/staff_room_provider.dart';
 import 'features/staff/presentation/providers/staff_timeslot_provider.dart';
+import 'features/admin/presentation/providers/admin_dashboard_provider.dart';
+import 'features/admin/presentation/providers/admin_user_provider.dart';
+import 'features/admin/presentation/providers/admin_role_provider.dart';
+import 'features/admin/presentation/providers/admin_profile_provider.dart';
 import 'controllers/teacher_controller.dart';
 import 'controllers/teacher_schedule_controller.dart';
 import 'controllers/teacher_class_controller.dart';
@@ -47,6 +51,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StaffApplicationProvider()),
         ChangeNotifierProvider(create: (_) => StaffRoomProvider()),
         ChangeNotifierProvider(create: (_) => StaffTimeSlotProvider()),
+        // Admin Providers
+        ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => AdminUserProvider()),
+        ChangeNotifierProvider(create: (_) => AdminRoleProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProfileProvider()),
         // Teacher Controllers
         ChangeNotifierProvider(create: (_) => TeacherController()),
         ChangeNotifierProvider(create: (_) => TeacherScheduleController()),

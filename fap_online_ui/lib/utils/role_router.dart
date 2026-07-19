@@ -11,8 +11,9 @@ class RoleRouter {
   /// Returns named route for the signed-in role.
   static String shellRouteFor(String? role) {
     switch (normalize(role)) {
-      case 'STAFF':
       case 'ADMIN':
+        return '/admin-shell';
+      case 'STAFF':
         return '/staff-shell';
       case 'TEACHER':
         return '/teacher-shell';

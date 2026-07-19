@@ -5,6 +5,8 @@ import '../../provider/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_shadows.dart';
+import '../../config/app_routes.dart';
+import '../../config/campus_config.dart';
 import '../../utils/preferences.dart';
 import '../../utils/role_router.dart';
 
@@ -23,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  CampusInfo? _campus;
 
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
@@ -39,6 +42,13 @@ class _LoginScreenState extends State<LoginScreen>
       curve: Curves.easeOut,
     );
     _fadeController.forward();
+    _loadCampus();
+  }
+
+  Future<void> _loadCampus() async {
+    final code = await PreferencesHelper.getCampusCode();
+    if (!mounted) return;
+    setState(() => _campus = CampusConfig.findByCode(code));
   }
 
   @override
@@ -51,6 +61,14 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Bắt buộc đã chọn campus (frontend config)
+    final campusCode = await PreferencesHelper.getCampusCode();
+    if (campusCode == null || campusCode.isEmpty) {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.campus);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -188,6 +206,48 @@ class _LoginScreenState extends State<LoginScreen>
           style: AppTextStyles.caption.copyWith(
             color: AppColors.textSecondary,
             fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Campus đã chọn (bấm Đổi để quay lại màn chọn)
+        InkWell(
+          onTap: () {
+            Navigator.pushReplacementNamed(context, AppRoutes.campus);
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.accentLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.location_on, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  _campus == null
+                      ? 'Chưa chọn campus'
+                      : '${_campus!.code} · ${_campus!.city}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'Đổi',
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

@@ -13,9 +13,9 @@ class TeacherScheduleService {
       final token = await _authService.getToken();
       final response = await dio.get(
         '${ApiConfig.baseUrl}/api/teacher/schedule/$userId',
-        options: Options(headers: {
-          if (token != null) 'Authorization': 'Bearer $token',
-        }),
+        options: Options(
+          headers: {if (token != null) 'Authorization': 'Bearer $token'},
+        ),
       );
 
       if (response.statusCode == 200) {
