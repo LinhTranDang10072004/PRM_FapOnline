@@ -6,6 +6,7 @@ class PreferencesHelper {
   static const String _fullNameKey = 'full_name';
   static const String _roleKey = 'user_role';
   static const String _userIdKey = 'user_id';
+  static const String _campusCodeKey = 'campus_code';
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,6 +43,7 @@ class PreferencesHelper {
     return prefs.getString(_fullNameKey);
   }
 
+  /// Xóa session login. Campus vẫn giữ để lần sau khỏi chọn lại.
   static Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(Constants.tokenKey);
@@ -69,5 +71,20 @@ class PreferencesHelper {
   static Future<int?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_userIdKey);
+  }
+
+  static Future<void> saveCampusCode(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_campusCodeKey, code);
+  }
+
+  static Future<String?> getCampusCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_campusCodeKey);
+  }
+
+  static Future<void> clearCampus() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_campusCodeKey);
   }
 }

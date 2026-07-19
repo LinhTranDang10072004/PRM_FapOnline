@@ -34,6 +34,8 @@ public class StudentService {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
     }
 
+    /** Mỗi môn trong kỳ có 20 buổi chuẩn để tính % tham gia. */
+    private static final int TOTAL_SLOTS_PER_SEMESTER = 20;
     private static final DateTimeFormatter DATE_LABEL_FORMAT = DateTimeFormatter.ofPattern("dd/MM");
     private static final String[] DAY_LABELS = {"MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"};
 
@@ -148,11 +150,17 @@ public class StudentService {
     public List<GradeDto> getMarkReport(Integer userId) {
         Student student = getStudentByUserId(userId);
 
-        String sql = "SELECT c.ClassId, c.ClassCode, s.SubjectCode, s.SubjectName, fg.FinalScore, fg.Result " +
-                     "FROM FinalGrades fg " +
-                     "JOIN Classes c ON fg.ClassId = c.ClassId " +
+        // Lấy tất cả lớp đang học + điểm (nếu có), kèm kỳ học để group theo semester
+        String sql = "SELECT c.ClassId, c.ClassCode, s.SubjectCode, s.SubjectName, " +
+                     "fg.FinalScore, fg.Result, " +
+                     "sem.SemesterId, sem.SemesterCode, sem.SemesterName " +
+                     "FROM ClassStudents cs " +
+                     "JOIN Classes c ON cs.ClassId = c.ClassId " +
                      "JOIN Subjects s ON c.SubjectId = s.SubjectId " +
-                     "WHERE fg.StudentId = :studentId";
+                     "JOIN Semesters sem ON c.SemesterId = sem.SemesterId " +
+                     "LEFT JOIN FinalGrades fg ON fg.ClassId = c.ClassId AND fg.StudentId = cs.StudentId " +
+                     "WHERE cs.StudentId = :studentId AND cs.Status = 'Active' " +
+                     "ORDER BY sem.StartDate DESC, s.SubjectCode";
 
         List<Object[]> results = entityManager.createNativeQuery(sql)
                 .setParameter("studentId", student.getStudentId())
@@ -165,11 +173,11 @@ public class StudentService {
                 "WHERE sg.StudentId = :studentId AND sg.ClassId = :classId " +
                 "ORDER BY cgc.ClassGradeComponentId";
 
-        String attendanceSql = "SELECT COUNT(sch.ScheduleId) as TotalSlots, " +
-                "SUM(CASE WHEN a.Status IN ('AbsentWithPermission', 'AbsentWithoutPermission') THEN 1 ELSE 0 END) as AbsentSlots " +
+        String attendanceSql = "SELECT " +
+                "COALESCE(SUM(CASE WHEN a.Status IN ('AbsentWithPermission', 'AbsentWithoutPermission') THEN 1 ELSE 0 END), 0) as AbsentSlots " +
                 "FROM Schedules sch " +
                 "LEFT JOIN Attendances a ON sch.ScheduleId = a.ScheduleId AND a.StudentId = :studentId " +
-                "WHERE sch.ClassId = :classId AND sch.Status = 'Completed'";
+                "WHERE sch.ClassId = :classId";
 
         List<GradeDto> grades = new ArrayList<>();
         for (Object[] row : results) {
@@ -180,23 +188,31 @@ public class StudentService {
             dto.setSubjectCode((String) row[2]);
             dto.setSubjectName((String) row[3]);
             dto.setFinalScore(row[4] != null ? new BigDecimal(row[4].toString()) : null);
-            dto.setResult((String) row[5]);
+            dto.setResult(row[5] != null ? (String) row[5] : "Not Graded");
+            dto.setSemesterId(row[6] != null ? ((Number) row[6]).intValue() : null);
+            dto.setSemesterCode(row[7] != null ? (String) row[7] : "");
+            dto.setSemesterName(row[8] != null ? (String) row[8] : "");
 
             List<Object[]> attRows = entityManager.createNativeQuery(attendanceSql)
                     .setParameter("studentId", student.getStudentId())
                     .setParameter("classId", classId)
                     .getResultList();
+            int absent = 0;
             if (!attRows.isEmpty() && attRows.get(0) != null) {
-                Object[] att = attRows.get(0);
-                int total = att[0] != null ? ((Number) att[0]).intValue() : 0;
-                int absent = att[1] != null ? ((Number) att[1]).intValue() : 0;
-                double presentPercent = total > 0
-                        ? Math.round(((double) (total - absent) / total) * 10000.0) / 100.0
-                        : 0.0;
-                dto.setAttendancePercent(presentPercent);
-            } else {
-                dto.setAttendancePercent(0.0);
+                Object val = attRows.get(0);
+                if (val instanceof Object[] arr) {
+                    absent = arr[0] != null ? ((Number) arr[0]).intValue() : 0;
+                } else if (val instanceof Number n) {
+                    absent = n.intValue();
+                }
             }
+            if (absent > TOTAL_SLOTS_PER_SEMESTER) {
+                absent = TOTAL_SLOTS_PER_SEMESTER;
+            }
+            // % tham gia = (20 - vắng) / 20
+            double presentPercent = Math.round(
+                    (double) (TOTAL_SLOTS_PER_SEMESTER - absent) / TOTAL_SLOTS_PER_SEMESTER * 10000.0) / 100.0;
+            dto.setAttendancePercent(presentPercent);
 
             List<Object[]> componentRows = entityManager.createNativeQuery(componentSql)
                     .setParameter("studentId", student.getStudentId())
@@ -218,17 +234,20 @@ public class StudentService {
 
     public List<AttendanceDto> getAttendanceReport(Integer userId) {
         Student student = getStudentByUserId(userId);
-        
+
+        // Đếm số buổi vắng theo môn + kỳ; tổng chuẩn = 20 buổi/kỳ
         String sql = "SELECT sub.SubjectCode, sub.SubjectName, " +
-                     "COUNT(s.ScheduleId) as TotalSlots, " +
-                     "SUM(CASE WHEN a.Status IN ('AbsentWithPermission', 'AbsentWithoutPermission') THEN 1 ELSE 0 END) as AbsentSlots " +
-                     "FROM Schedules s " +
-                     "JOIN Classes c ON s.ClassId = c.ClassId " +
+                     "sem.SemesterId, sem.SemesterCode, sem.SemesterName, " +
+                     "COALESCE(SUM(CASE WHEN a.Status IN ('AbsentWithPermission', 'AbsentWithoutPermission') THEN 1 ELSE 0 END), 0) as AbsentSlots " +
+                     "FROM ClassStudents cs " +
+                     "JOIN Classes c ON cs.ClassId = c.ClassId " +
                      "JOIN Subjects sub ON c.SubjectId = sub.SubjectId " +
-                     "JOIN ClassStudents cs ON c.ClassId = cs.ClassId AND cs.StudentId = :studentId AND cs.Status = 'Active' " +
-                     "LEFT JOIN Attendances a ON s.ScheduleId = a.ScheduleId AND a.StudentId = :studentId " +
-                     "WHERE s.Status = 'Completed' " +
-                     "GROUP BY sub.SubjectCode, sub.SubjectName";
+                     "JOIN Semesters sem ON c.SemesterId = sem.SemesterId " +
+                     "LEFT JOIN Schedules s ON s.ClassId = c.ClassId " +
+                     "LEFT JOIN Attendances a ON a.ScheduleId = s.ScheduleId AND a.StudentId = cs.StudentId " +
+                     "WHERE cs.StudentId = :studentId AND cs.Status = 'Active' " +
+                     "GROUP BY sub.SubjectCode, sub.SubjectName, sem.SemesterId, sem.SemesterCode, sem.SemesterName, sem.StartDate " +
+                     "ORDER BY sem.StartDate DESC, sub.SubjectCode";
 
         List<Object[]> results = entityManager.createNativeQuery(sql)
                 .setParameter("studentId", student.getStudentId())
@@ -236,14 +255,25 @@ public class StudentService {
 
         List<AttendanceDto> dtos = new ArrayList<>();
         for (Object[] row : results) {
+            int absent = row[5] != null ? ((Number) row[5]).intValue() : 0;
+            if (absent > TOTAL_SLOTS_PER_SEMESTER) {
+                absent = TOTAL_SLOTS_PER_SEMESTER;
+            }
+            int present = TOTAL_SLOTS_PER_SEMESTER - absent;
+            double presentPercent = Math.round((double) present / TOTAL_SLOTS_PER_SEMESTER * 10000.0) / 100.0;
+            double absentPercent = Math.round((double) absent / TOTAL_SLOTS_PER_SEMESTER * 10000.0) / 100.0;
+
             AttendanceDto dto = new AttendanceDto();
             dto.setSubjectCode((String) row[0]);
             dto.setSubjectName((String) row[1]);
-            int total = ((Number) row[2]).intValue();
-            int absent = ((Number) row[3]).intValue();
-            dto.setTotalSlots(total);
+            dto.setSemesterId(row[2] != null ? ((Number) row[2]).intValue() : null);
+            dto.setSemesterCode(row[3] != null ? (String) row[3] : "");
+            dto.setSemesterName(row[4] != null ? (String) row[4] : "");
+            dto.setTotalSlots(TOTAL_SLOTS_PER_SEMESTER);
             dto.setAbsentSlots(absent);
-            dto.setAbsentPercent(total > 0 ? Math.round((double) absent / total * 10000.0) / 100.0 : 0.0);
+            dto.setPresentSlots(present);
+            dto.setPresentPercent(presentPercent);
+            dto.setAbsentPercent(absentPercent);
             dtos.add(dto);
         }
         return dtos;

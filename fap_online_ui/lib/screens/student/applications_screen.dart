@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../models/application_model.dart';
 import '../../services/application_api_service.dart';
 import '../../services/auth_service.dart';
-import '../../models/application_model.dart';
-import 'package:intl/intl.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({super.key});
@@ -28,124 +29,220 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     return _apiService.getMyApplications(token);
   }
 
-  void _showAddApplicationDialog() {
-    final _formKey = GlobalKey<FormState>();
-    final _titleController = TextEditingController();
-    final _contentController = TextEditingController();
-    DateTime? _startDate;
-    DateTime? _endDate;
+  Future<void> _showAddApplicationSheet() async {
+    final token = await _authService.getToken();
+    if (token == null || !mounted) return;
 
-    showDialog(
+    List<ApplicationTypeModel> types;
+    try {
+      types = await _apiService.getTypes(token);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải loại đơn: $e')),
+      );
+      return;
+    }
+    if (types.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chưa có loại đơn. Restart backend để seed.')),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final formKey = GlobalKey<FormState>();
+    final titleCtrl = TextEditingController();
+    final contentCtrl = TextEditingController();
+    DateTime? startDate;
+    DateTime? endDate;
+    int selectedTypeId = types.first.applicationTypeId;
+
+    final submitted = await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Nộp đơn mới'),
-              content: Form(
-                key: _formKey,
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
+            builder: (ctx, setSheetState) {
+              return Form(
+                key: formKey,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(labelText: 'Tiêu đề'),
-                        validator: (value) => value == null || value.isEmpty ? 'Vui lòng nhập tiêu đề' : null,
+                      const Text(
+                        'Nộp đơn mới',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<int>(
+                        value: selectedTypeId,
+                        decoration: const InputDecoration(
+                          labelText: 'Loại đơn *',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: types
+                            .map(
+                              (t) => DropdownMenuItem(
+                                value: t.applicationTypeId,
+                                child: Text(t.typeName),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setSheetState(() => selectedTypeId = v);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
                       TextFormField(
-                        controller: _contentController,
-                        decoration: const InputDecoration(labelText: 'Nội dung (lý do)'),
+                        controller: titleCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Tiêu đề *',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? 'Bắt buộc' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: contentCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Nội dung (lý do) *',
+                          border: OutlineInputBorder(),
+                        ),
                         maxLines: 3,
-                        validator: (value) => value == null || value.isEmpty ? 'Vui lòng nhập nội dung' : null,
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? 'Bắt buộc' : null,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: TextButton(
+                            child: OutlinedButton(
                               onPressed: () async {
                                 final date = await showDatePicker(
-                                  context: context,
+                                  context: ctx,
                                   initialDate: DateTime.now(),
-                                  firstDate: DateTime.now(),
-                                  lastDate: DateTime(2030),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2035),
                                 );
                                 if (date != null) {
-                                  setDialogState(() => _startDate = date);
+                                  setSheetState(() => startDate = date);
                                 }
                               },
-                              child: Text(_startDate == null ? 'Từ ngày' : DateFormat('yyyy-MM-dd').format(_startDate!)),
+                              child: Text(
+                                startDate == null
+                                    ? 'Từ ngày'
+                                    : DateFormat('yyyy-MM-dd').format(startDate!),
+                              ),
                             ),
                           ),
-                          const Text(' - '),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: TextButton(
+                            child: OutlinedButton(
                               onPressed: () async {
                                 final date = await showDatePicker(
-                                  context: context,
-                                  initialDate: _startDate ?? DateTime.now(),
-                                  firstDate: _startDate ?? DateTime.now(),
-                                  lastDate: DateTime(2030),
+                                  context: ctx,
+                                  initialDate: startDate ?? DateTime.now(),
+                                  firstDate: startDate ?? DateTime(2020),
+                                  lastDate: DateTime(2035),
                                 );
                                 if (date != null) {
-                                  setDialogState(() => _endDate = date);
+                                  setSheetState(() => endDate = date);
                                 }
                               },
-                              child: Text(_endDate == null ? 'Đến ngày' : DateFormat('yyyy-MM-dd').format(_endDate!)),
+                              child: Text(
+                                endDate == null
+                                    ? 'Đến ngày'
+                                    : DateFormat('yyyy-MM-dd').format(endDate!),
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        onPressed: () async {
+                          if (!formKey.currentState!.validate()) return;
+                          final err = await _apiService.submitApplication(
+                            token,
+                            applicationTypeId: selectedTypeId,
+                            title: titleCtrl.text.trim(),
+                            content: contentCtrl.text.trim(),
+                            startDate: startDate != null
+                                ? DateFormat('yyyy-MM-dd').format(startDate!)
+                                : null,
+                            endDate: endDate != null
+                                ? DateFormat('yyyy-MM-dd').format(endDate!)
+                                : null,
+                          );
+                          if (!ctx.mounted) return;
+                          if (err == null) {
+                            Navigator.pop(ctx, true);
+                          } else {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(content: Text(err)),
+                            );
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Gửi đơn'),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Hủy'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      final token = await _authService.getToken();
-                      if (token == null) return;
-
-                      final newApp = ApplicationModel(
-                        title: _titleController.text,
-                        content: _contentController.text,
-                        status: 'Pending',
-                        startDate: _startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : null,
-                        endDate: _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null,
-                      );
-
-                      final success = await _apiService.submitApplication(token, newApp);
-                      Navigator.pop(ctx);
-
-                      if (success) {
-                        ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Nộp đơn thành công')));
-                        setState(() {
-                          _applicationsFuture = _fetchApplications();
-                        });
-                      } else {
-                        ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Nộp đơn thất bại')));
-                      }
-                    }
-                  },
-                  child: const Text('Gửi'),
-                ),
-              ],
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
+
+    titleCtrl.dispose();
+    contentCtrl.dispose();
+
+    if (submitted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nộp đơn thành công')),
+      );
+      setState(() => _applicationsFuture = _fetchApplications());
+    }
+  }
+
+  Color _statusBg(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'pending':
+        return Colors.orange.shade100;
+      case 'approved':
+        return Colors.green.shade100;
+      case 'rejected':
+        return Colors.red.shade100;
+      default:
+        return Colors.grey.shade200;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Đơn từ của tôi'),
       ),
@@ -154,21 +251,44 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Lỗi: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Lỗi: ${snapshot.error}', textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => setState(
+                        () => _applicationsFuture = _fetchApplications(),
+                      ),
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('Bạn chưa gửi đơn nào.'));
           }
 
           final apps = snapshot.data!;
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 88),
             itemCount: apps.length,
             itemBuilder: (context, index) {
               final app = apps[index];
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
-                  title: Text(app.title ?? 'Không có tiêu đề', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    app.title ?? 'Không có tiêu đề',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -179,7 +299,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                   ),
                   trailing: Chip(
                     label: Text(app.status ?? 'Unknown'),
-                    backgroundColor: app.status == 'Pending' ? Colors.orange.shade100 : Colors.green.shade100,
+                    backgroundColor: _statusBg(app.status),
                   ),
                 ),
               );
@@ -188,9 +308,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddApplicationDialog,
-        child: const Icon(Icons.add),
+        onPressed: _showAddApplicationSheet,
         tooltip: 'Nộp đơn mới',
+        child: const Icon(Icons.add),
       ),
     );
   }

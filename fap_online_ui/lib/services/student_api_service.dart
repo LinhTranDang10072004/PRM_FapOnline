@@ -67,34 +67,63 @@ class StudentApiService {
             .map((e) => GradeDetailModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-    } catch (_) {}
-    return [];
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    } catch (e) {
+      print('Error fetching marks: $e');
+      rethrow;
+    }
   }
 
   Future<MarkReportModel> getMarkReport(String token) async {
     final marks = await getMarks(token);
-    return MarkReportModel(
-      semesters: [
-        SemesterMarkModel(
-          semesterId: 0,
-          semesterCode: 'ALL',
-          semesterName: 'Tất cả môn',
-          courses: marks
-              .map(
-                (m) => CourseMarkSummaryModel(
-                  classId: m.classId ?? 0,
-                  classCode: m.classCode ?? '',
-                  subjectCode: m.subjectCode ?? '',
-                  subjectName: m.subjectName ?? '',
-                  average: m.finalScore,
-                  attendancePercent: m.attendancePercent,
-                  result: m.result,
-                ),
-              )
-              .toList(),
+    if (marks.isEmpty) {
+      return MarkReportModel(semesters: []);
+    }
+
+    // Group theo kỳ: FA26 → 5 môn, SP26 → ...
+    final Map<int, List<GradeDetailModel>> bySemester = {};
+    final Map<int, SemesterMarkModel> meta = {};
+
+    for (final m in marks) {
+      final sid = m.semesterId ?? 0;
+      bySemester.putIfAbsent(sid, () => []);
+      bySemester[sid]!.add(m);
+      meta.putIfAbsent(
+        sid,
+        () => SemesterMarkModel(
+          semesterId: sid,
+          semesterCode: (m.semesterCode != null && m.semesterCode!.isNotEmpty)
+              ? m.semesterCode!
+              : 'Kỳ $sid',
+          semesterName: m.semesterName ?? '',
+          courses: const [],
         ),
-      ],
-    );
+      );
+    }
+
+    final semesters = bySemester.entries.map((e) {
+      final info = meta[e.key]!;
+      return SemesterMarkModel(
+        semesterId: info.semesterId,
+        semesterCode: info.semesterCode,
+        semesterName: info.semesterName,
+        courses: e.value
+            .map(
+              (m) => CourseMarkSummaryModel(
+                classId: m.classId ?? 0,
+                classCode: m.classCode ?? '',
+                subjectCode: m.subjectCode ?? '',
+                subjectName: m.subjectName ?? '',
+                average: m.finalScore,
+                attendancePercent: m.attendancePercent,
+                result: m.result,
+              ),
+            )
+            .toList(),
+      );
+    }).toList();
+
+    return MarkReportModel(semesters: semesters);
   }
 
   Future<GradeDetailModel> getMarkDetail(String token, int classId) async {
