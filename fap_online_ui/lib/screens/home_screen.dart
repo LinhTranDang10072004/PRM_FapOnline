@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../provider/dashboard_provider.dart';
+import '../provider/parent_child_provider.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_shadows.dart';
 
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -10,6 +15,11 @@ import 'student/transcript_screen.dart';
 import 'student/applications_screen.dart';
 import 'student/profile_screen.dart';
 import 'student/notifications_screen.dart';
+import 'dashboard/dashboard_tab.dart';
+import 'children/my_children_screen.dart';
+import 'timetable/timetable_screen.dart';
+import 'notification/notifications_screen.dart';
+import 'profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,34 +29,29 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _authService = AuthService();
-  String _fullName = '';
-  String _username = '';
-  bool _loading = true;
+  int _currentIndex = 0;
+  bool _initialized = false;
+
+  late final List<Widget> _tabs = [
+    DashboardTab(
+      onTabChange: (index) {
+        setState(() => _currentIndex = index);
+      },
+    ),
+    const MyChildrenScreen(),
+    const TimetableScreen(),
+    const NotificationsScreen(),
+    const ProfileScreen(),
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
-
-  Future<void> _loadUser() async {
-    final fullName = await _authService.getFullName() ?? '';
-    final username = await _authService.getUsername() ?? '';
-    if (!mounted) return;
-    setState(() {
-      _fullName = fullName;
-      _username = username;
-      _loading = false;
-    });
-  }
-
-  Future<void> _logout() async {
-    await _authService.logout();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      context.read<DashboardProvider>().fetchDashboard();
+      context.read<ParentChildProvider>().fetchChildren();
+    }
   }
 
   Widget _buildDrawerItem(IconData icon, String title, Widget screen) {
@@ -65,64 +70,70 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get unread count from provider
+    final dashboardProvider = context.watch<DashboardProvider>();
+    final int unreadCount = dashboardProvider.dashboardData?.unreadNotificationCount ?? 0;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FAP Online'),
-        actions: [
-          IconButton(
-            tooltip: 'Đăng xuất',
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _tabs,
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(_fullName.isNotEmpty ? _fullName : _username),
-              accountEmail: Text('@$_username'),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 40),
-              ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: AppShadows.bottomNav,
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textHint,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Trang chủ',
             ),
-            _buildDrawerItem(Icons.dashboard, 'Dashboard', const StudentDashboardScreen()),
-            _buildDrawerItem(Icons.calendar_today, 'Thời khóa biểu', const TimetableScreen()),
-            _buildDrawerItem(Icons.check_circle_outline, 'Điểm danh', const AttendanceScreen()),
-            _buildDrawerItem(Icons.grade, 'Báo cáo điểm', const MarkReportScreen()),
-            _buildDrawerItem(Icons.article, 'Bảng điểm', const TranscriptScreen()),
-            _buildDrawerItem(Icons.description, 'Đơn từ', const ApplicationsScreen()),
-            _buildDrawerItem(Icons.notifications, 'Thông báo', const NotificationsScreen()),
-            _buildDrawerItem(Icons.person, 'Trang cá nhân', const ProfileScreen()),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.people_rounded),
+              label: 'Con em',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_month_rounded),
+              label: 'Lịch học',
+            ),
+            BottomNavigationBarItem(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_rounded),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              label: 'Thông báo',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded),
+              label: 'Cá nhân',
+            ),
           ],
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.school, size: 64, color: Colors.blue),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Xin chào, ${_fullName.isNotEmpty ? _fullName : _username}',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Chào mừng bạn đến với FAP Online',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ),
     );
   }
 }

@@ -9,4 +9,9 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Integer> {
     Optional<Student> findByUserId(Integer userId);
+import java.util.List;
+
+@Repository
+public interface StudentRepository extends JpaRepository<Student, Integer> {
+    List<Student> findAllByStudentIdIn(List<Integer> studentIds);
 }

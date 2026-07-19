@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
+
+import java.util.List;
+
 public interface FinalGradeRepository extends JpaRepository<FinalGrade, Integer> {
     List<FinalGrade> findByStudentId(Integer studentId);
 }

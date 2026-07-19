@@ -10,3 +10,14 @@ import java.util.List;
 public interface ClassStudentRepository extends JpaRepository<ClassStudent, ClassStudentId> {
     List<ClassStudent> findByStudentId(Integer studentId);
 }
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ClassStudentRepository extends JpaRepository<ClassStudent, ClassStudentId> {
+    List<ClassStudent> findByClassId(Integer classId);
+    List<ClassStudent> findByStudentId(Integer studentId);
+    Optional<ClassStudent> findByClassIdAndStudentId(Integer classId, Integer studentId);
+    boolean existsByClassIdAndStudentId(Integer classId, Integer studentId);
+    long countByClassId(Integer classId);
+}

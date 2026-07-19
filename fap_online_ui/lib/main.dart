@@ -1,67 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'services/auth_service.dart';
+import 'config/app_routes.dart';
+import 'config/constants.dart';
+import 'provider/auth_provider.dart';
+import 'provider/dashboard_provider.dart';
+import 'provider/parent_child_provider.dart';
+import 'provider/profile_provider.dart';
+import 'provider/attendance_provider.dart';
+import 'provider/transcript_provider.dart';
+import 'provider/student_fee_provider.dart';
+import 'theme/app_theme.dart';
 
-void main() {
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'features/staff/presentation/providers/staff_dashboard_provider.dart';
+import 'features/staff/presentation/providers/staff_class_provider.dart';
+import 'features/staff/presentation/providers/staff_schedule_provider.dart';
+import 'features/staff/presentation/providers/staff_application_provider.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FapOnlineApp());
+  await initializeDateFormatting('vi', null);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
+        ChangeNotifierProvider(create: (_) => ParentChildProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => AttendanceProvider()),
+        ChangeNotifierProvider(create: (_) => TranscriptProvider()),
+        ChangeNotifierProvider(create: (_) => StudentFeeProvider()),
+        // Staff Providers
+        ChangeNotifierProvider(create: (_) => StaffDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => StaffClassProvider()),
+        ChangeNotifierProvider(create: (_) => StaffScheduleProvider()),
+        ChangeNotifierProvider(create: (_) => StaffApplicationProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class FapOnlineApp extends StatelessWidget {
-  const FapOnlineApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FAP Online',
+      title: Constants.appName,
+      theme: AppTheme.lightTheme,
+      initialRoute: AppRoutes.start,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
-        ),
-      ),
-      home: const AuthGate(),
-    );
-  }
-}
-
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
-
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  final _authService = AuthService();
-  late Future<bool> _sessionFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _sessionFuture = _authService.isLoggedIn();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _sessionFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.data == true) {
-          return const HomeScreen();
-        }
-        return const LoginScreen();
-      },
     );
   }
 }
