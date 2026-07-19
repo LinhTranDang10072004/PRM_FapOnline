@@ -1,5 +1,12 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.ApplicationDto;
+import com.example.demo.security.AuthenticatedUser;
+import com.example.demo.service.ApplicationService;
+import com.example.demo.validation.ApplicationSubmitRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.example.demo.dto.ApplicationDTO;
 import com.example.demo.dto.ProcessApplicationRequest;
 import com.example.demo.service.ApplicationService;
@@ -14,65 +21,28 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 @RestController
-@RequestMapping("/api/staff/applications")
-@RequiredArgsConstructor
-@Tag(name = "Staff - Applications", description = "UC-18: Xem và xử lý đơn từ của sinh viên")
-@PreAuthorize("hasRole('STAFF')")
+@RequestMapping("/api/applications")
 public class ApplicationController {
 
-    private final ApplicationService applicationService;
+	private final ApplicationService applicationService;
 
+	public ApplicationController(ApplicationService applicationService) {
+		this.applicationService = applicationService;
+	}
 
-    @GetMapping
-    @Operation(
-            summary = "Danh sách đơn từ")
-    public ResponseEntity<?> getApplications(
-            @Parameter(description = "Lọc theo trạng thái: Pending | Approved | Rejected | Cancelled")
-            @RequestParam(required = false) String status) {
-        try {
-            return ResponseEntity.ok(applicationService.getApplications(status));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : e.toString(), "trace", e.getStackTrace()[0].toString()));
-        }
-    }
+	@GetMapping("/my")
+	public ResponseEntity<List<ApplicationDto>> getMyApplications(@AuthenticationPrincipal AuthenticatedUser user) {
+		return ResponseEntity.ok(applicationService.getMyApplications(user.getUserId()));
+	}
 
-    @GetMapping("/{applicationId}")
-    @Operation(
-            summary = "Chi tiết đơn từ",
-            description = "Xem loại đơn, nội dung, file đính kèm và thông tin sinh viên gửi đơn."
-    )
-    public ResponseEntity<ApplicationDTO> getApplicationById(@PathVariable Integer applicationId) {
-        return ResponseEntity.ok(applicationService.getApplicationById(applicationId));
-    }
-
-  
-    @PutMapping("/{applicationId}/approve")
-    @Operation(
-            summary = "Duyệt đơn (Approve)",
-            description = "Chỉ được duyệt đơn có trạng thái Pending. " +
-                          "Hệ thống tự ghi nhận người duyệt và thời gian. " +
-                          "Ghi chú (processNote) là tùy chọn khi duyệt."
-    )
-    public ResponseEntity<ApplicationDTO> approveApplication(
-            @PathVariable Integer applicationId,
-            @Valid @RequestBody ProcessApplicationRequest request) {
-        return ResponseEntity.ok(applicationService.approveApplication(applicationId, request));
-    }
-
-   
-    @PutMapping("/{applicationId}/reject")
-    @Operation(
-            summary = "Từ chối đơn (Reject)",
-            description = "Chỉ được từ chối đơn có trạng thái Pending. " +
-                          "BẮT BUỘC phải điền lý do từ chối trong trường processNote. " +
-                          "Hệ thống tự ghi nhận người từ chối và thời gian."
-    )
-    public ResponseEntity<ApplicationDTO> rejectApplication(
-            @PathVariable Integer applicationId,
-            @Valid @RequestBody ProcessApplicationRequest request) {
-        return ResponseEntity.ok(applicationService.rejectApplication(applicationId, request));
-    }
+	@PostMapping
+	public ResponseEntity<?> submitApplication(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@Valid @RequestBody ApplicationSubmitRequest request) {
+		boolean success = applicationService.submitApplication(user.getUserId(), request);
+		return success
+				? ResponseEntity.ok("Application submitted")
+				: ResponseEntity.badRequest().body("Failed to submit");
+	}
 }
