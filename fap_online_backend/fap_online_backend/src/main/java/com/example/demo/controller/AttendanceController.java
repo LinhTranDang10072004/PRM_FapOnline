@@ -1,18 +1,42 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.AttendanceReportDTO;
+import com.example.demo.dto.AttendanceRequestDTO;
+import com.example.demo.dto.AttendanceStudentDTO;
 import com.example.demo.service.AttendanceService;
-import com.example.demo.service.ParentValidationService;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
+@RestController
+@RequestMapping("/attendance")
+@CrossOrigin(origins = "*")
+public class AttendanceController {
+
+    @Autowired
+    private AttendanceService attendanceService;
+
+    // Lấy danh sách sinh viên của một buổi học
+    @GetMapping("/{scheduleId}")
+    public List<AttendanceStudentDTO> getAttendanceBySchedule(
+            @PathVariable Integer scheduleId) {
+
+        return attendanceService.getAttendanceBySchedule(
+                scheduleId
+        );
+    }
+
+    // Lưu điểm danh
+    @PostMapping("/save")
+    public String saveAttendance(
+            @RequestBody AttendanceRequestDTO request) {
+
+        attendanceService.saveAttendance(request);
+
+        return "Attendance saved successfully";
+    }
+
+}
 @RestController
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
