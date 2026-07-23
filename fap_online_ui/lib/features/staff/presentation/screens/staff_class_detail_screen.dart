@@ -55,12 +55,20 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
             PopupMenuButton<String>(
               onSelected: (v) => _handleMenuAction(context, v, cls),
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'edit', child: Text('Sửa thông tin')),
-                const PopupMenuItem(value: 'assign', child: Text('Phân công GV')),
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Sửa thông tin'),
+                ),
+                const PopupMenuItem(
+                  value: 'assign',
+                  child: Text('Phân công GV'),
+                ),
                 const PopupMenuItem(
                   value: 'cancel',
-                  child: Text('Hủy lớp',
-                      style: TextStyle(color: AppColors.error)),
+                  child: Text(
+                    'Hủy lớp',
+                    style: TextStyle(color: AppColors.error),
+                  ),
                 ),
               ],
             ),
@@ -77,7 +85,9 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
         ),
       ),
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : TabBarView(
               controller: _tabController,
               children: [
@@ -107,14 +117,17 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
 
   void _showEditDialog(BuildContext context, ClassModel cls) {
     final nameCtrl = TextEditingController(text: cls.className);
-    final maxCtrl =
-        TextEditingController(text: cls.maxStudents?.toString() ?? '');
+    final maxCtrl = TextEditingController(
+      text: cls.maxStudents?.toString() ?? '',
+    );
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Sửa thông tin lớp',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Sửa thông tin lớp',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -123,7 +136,8 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
               decoration: InputDecoration(
                 labelText: 'Tên lớp',
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -133,15 +147,17 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
               decoration: InputDecoration(
                 labelText: 'Sĩ số tối đa',
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
           FilledButton(
             onPressed: () async {
               final req = UpdateClassRequest(
@@ -152,10 +168,14 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
               final ok = await provider.updateClass(cls.classId!, req);
               if (!context.mounted) return;
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(ok ? 'Cập nhật thành công!' : (provider.error ?? 'Lỗi')),
-                backgroundColor: ok ? AppColors.success : AppColors.error,
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    ok ? 'Cập nhật thành công!' : (provider.error ?? 'Lỗi'),
+                  ),
+                  backgroundColor: ok ? AppColors.success : AppColors.error,
+                ),
+              );
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Lưu'),
@@ -173,8 +193,10 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Phân công Giáo viên',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Phân công Giáo viên',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: Form(
           key: formKey,
           child: DropdownButtonFormField<int>(
@@ -183,8 +205,9 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
                 : null,
             decoration: InputDecoration(
               labelText: 'Chọn Giáo viên',
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             items: allTeachers.map((t) {
               return DropdownMenuItem<int>(
@@ -200,20 +223,28 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
           FilledButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
               if (selectedTeacherId == null) return;
               final provider = context.read<StaffClassProvider>();
-              final ok = await provider.assignTeacher(cls.classId!, selectedTeacherId!);
+              final ok = await provider.assignTeacher(
+                cls.classId!,
+                selectedTeacherId!,
+              );
               if (!context.mounted) return;
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(ok ? 'Phân công thành công!' : (provider.error ?? 'Lỗi')),
-                backgroundColor: ok ? AppColors.success : AppColors.error,
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    ok ? 'Phân công thành công!' : (provider.error ?? 'Lỗi'),
+                  ),
+                  backgroundColor: ok ? AppColors.success : AppColors.error,
+                ),
+              );
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Phân công'),
@@ -227,14 +258,18 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Hủy lớp học?',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Hủy lớp học?',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: Text(
-            'Bạn có chắc muốn hủy lớp "${cls.className}"? Hành động này không thể hoàn tác.'),
+          'Bạn có chắc muốn hủy lớp "${cls.className}"? Hành động này không thể hoàn tác.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Không')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Không'),
+          ),
           FilledButton(
             onPressed: () async {
               final provider = context.read<StaffClassProvider>();
@@ -242,10 +277,12 @@ class _StaffClassDetailScreenState extends State<StaffClassDetailScreen>
               if (!context.mounted) return;
               Navigator.pop(context);
               if (ok) Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(ok ? 'Đã hủy lớp!' : (provider.error ?? 'Lỗi')),
-                backgroundColor: ok ? AppColors.success : AppColors.error,
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(ok ? 'Đã hủy lớp!' : (provider.error ?? 'Lỗi')),
+                  backgroundColor: ok ? AppColors.success : AppColors.error,
+                ),
+              );
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Hủy lớp'),
@@ -274,7 +311,10 @@ class _InfoTab extends StatelessWidget {
           items: [
             _InfoRow('Mã lớp', cls!.classCode),
             _InfoRow('Tên lớp', cls!.className),
-            _InfoRow('Môn học', '${cls!.subjectName ?? ''} (${cls!.subjectCode ?? ''})'),
+            _InfoRow(
+              'Môn học',
+              '${cls!.subjectName ?? ''} (${cls!.subjectCode ?? ''})',
+            ),
             _InfoRow('Học kỳ', cls!.semesterName),
           ],
         ),
@@ -290,9 +330,13 @@ class _InfoTab extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            const Text('Trạng thái: ',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+            const Text(
+              'Trạng thái: ',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
             if (cls!.status != null) StatusBadge(status: cls!.status!),
           ],
         ),
@@ -358,7 +402,9 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13),
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
           ),
           Expanded(
@@ -366,9 +412,10 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               value ?? '—',
               style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13),
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
               textAlign: TextAlign.right,
             ),
           ),
@@ -394,9 +441,13 @@ class _StudentsTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Row(
             children: [
-              Text('${students.length} sinh viên',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+              Text(
+                '${students.length} sinh viên',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const Spacer(),
               TextButton.icon(
                 onPressed: () => _showAddStudentDialog(context),
@@ -409,8 +460,11 @@ class _StudentsTab extends StatelessWidget {
         Expanded(
           child: students.isEmpty
               ? const Center(
-                  child: Text('Chưa có sinh viên',
-                      style: TextStyle(color: AppColors.textSecondary)))
+                  child: Text(
+                    'Chưa có sinh viên',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: students.length,
@@ -440,8 +494,10 @@ class _StudentsTab extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('Thêm Sinh viên',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            title: const Text(
+              'Thêm Sinh viên',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
             content: Form(
               key: formKey,
               child: DropdownMenu<int>(
@@ -465,55 +521,76 @@ class _StudentsTab extends StatelessWidget {
                 },
               ),
             ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy')),
-          FilledButton(
-            onPressed: () async {
-              if (selectedStudentId == null) {
-                setState(() => errorText = 'Vui lòng chọn sinh viên');
-                return;
-              }
-              final provider = context.read<StaffClassProvider>();
-              final ok = await provider.addStudentToClass(classId, selectedStudentId!);
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(ok ? 'Thêm thành công!' : (provider.error ?? 'Lỗi')),
-                backgroundColor: ok ? AppColors.success : AppColors.error,
-              ));
-            },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Thêm'),
-          ),
-        ],
-      );
-    }));
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  if (selectedStudentId == null) {
+                    setState(() => errorText = 'Vui lòng chọn sinh viên');
+                    return;
+                  }
+                  final provider = context.read<StaffClassProvider>();
+                  final ok = await provider.addStudentToClass(
+                    classId,
+                    selectedStudentId!,
+                  );
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        ok ? 'Thêm thành công!' : (provider.error ?? 'Lỗi'),
+                      ),
+                      backgroundColor: ok ? AppColors.success : AppColors.error,
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text('Thêm'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _showRemoveConfirm(BuildContext context, ClassStudentModel student) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Xóa sinh viên?',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        content: Text('Xóa ${student.fullName ?? student.studentCode} khỏi lớp?'),
+        title: const Text(
+          'Xóa sinh viên?',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Xóa ${student.fullName ?? student.studentCode} khỏi lớp?',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
           FilledButton(
             onPressed: () async {
               final provider = context.read<StaffClassProvider>();
               final ok = await provider.removeStudentFromClass(
-                  classId, student.studentId!);
+                classId,
+                student.studentId!,
+              );
               if (!context.mounted) return;
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(ok ? 'Đã xóa!' : (provider.error ?? 'Lỗi')),
-                backgroundColor: ok ? AppColors.success : AppColors.error,
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(ok ? 'Đã xóa!' : (provider.error ?? 'Lỗi')),
+                  backgroundColor: ok ? AppColors.success : AppColors.error,
+                ),
+              );
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Xóa'),
@@ -569,22 +646,28 @@ class _StudentTile extends StatelessWidget {
                 Text(
                   student.fullName ?? '—',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: AppColors.textPrimary),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 Text(
                   student.studentCode ?? '—',
                   style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
           IconButton(
             onPressed: onRemove,
-            icon: const Icon(Icons.remove_circle_outline_rounded,
-                color: AppColors.error, size: 20),
+            icon: const Icon(
+              Icons.remove_circle_outline_rounded,
+              color: AppColors.error,
+              size: 20,
+            ),
           ),
         ],
       ),

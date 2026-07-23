@@ -31,6 +31,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
     private final UserRoleRepository userRoleRepository;
     private final UserRepository userRepository;
 
+    // filter role 
     @Override
     public List<AdminRoleDTO> getRoles() {
         return roleRepository.findAll().stream()

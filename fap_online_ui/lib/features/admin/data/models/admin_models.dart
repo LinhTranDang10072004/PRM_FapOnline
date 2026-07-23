@@ -21,6 +21,35 @@ class AdminDashboardModel {
   }
 }
 
+class AdminSemesterModel {
+  final int semesterId;
+  final String semesterCode;
+  final String semesterName;
+  final String term;
+  final String academicYear;
+  final String status;
+
+  const AdminSemesterModel({
+    required this.semesterId,
+    required this.semesterCode,
+    required this.semesterName,
+    required this.term,
+    required this.academicYear,
+    required this.status,
+  });
+
+  factory AdminSemesterModel.fromJson(Map<String, dynamic> json) {
+    return AdminSemesterModel(
+      semesterId: _asInt(json['semesterId']),
+      semesterCode: json['semesterCode']?.toString() ?? '',
+      semesterName: json['semesterName']?.toString() ?? '',
+      term: json['term']?.toString() ?? '',
+      academicYear: json['academicYear']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+    );
+  }
+}
+
 class AdminUserModel {
   final int userId;
   final String username;

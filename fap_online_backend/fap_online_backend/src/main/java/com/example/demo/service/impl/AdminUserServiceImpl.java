@@ -20,10 +20,16 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * UC: Manage Users (Admin)
+ * Thêm / sửa / xóa (soft) / khóa / mở khóa tài khoản.
+ * Đồng thời gán Role + tạo profile tương ứng (Student, Teacher, Staff, Parent).
+ */
 @Service
 @RequiredArgsConstructor
 public class AdminUserServiceImpl implements AdminUserService {
 
+    /** Trạng thái tài khoản chuẩn (khớp AuthService login: chỉ Active mới đăng nhập được). */
     private static final String STATUS_ACTIVE = "Active";
     private static final String STATUS_LOCKED = "Locked";
     private static final String STATUS_DELETED = "Deleted";
@@ -37,6 +43,13 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final ParentRepository parentRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Danh sách user kèm filter:
+     * - role: tên role (ADMIN, STUDENT, ...) — khớp bất kỳ role nào của user
+     * - status: Active / Locked
+     * - q: tìm trong username, fullName, email
+     * User đã soft-delete (Deleted) không trả về.
+     */
     @Override
     public List<AdminUserDTO> getUsers(String role, String status, String q) {
         String roleFilter = normalize(role);
@@ -44,12 +57,16 @@ public class AdminUserServiceImpl implements AdminUserService {
         String query = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
 
         return userRepository.findAll().stream()
+                // Ẩn user đã xóa mềm
                 .filter(u -> !STATUS_DELETED.equalsIgnoreCase(u.getStatus()))
                 .map(this::toDto)
+                // Filter theo role (nếu có)
                 .filter(dto -> roleFilter.isEmpty()
                         || dto.getRoles().stream().anyMatch(r -> r.equalsIgnoreCase(roleFilter)))
+                // Filter theo trạng thái (nếu có)
                 .filter(dto -> statusFilter.isEmpty()
                         || (dto.getStatus() != null && dto.getStatus().equalsIgnoreCase(statusFilter)))
+                // Tìm kiếm text
                 .filter(dto -> query.isEmpty()
                         || contains(dto.getUsername(), query)
                         || contains(dto.getFullName(), query)
@@ -57,11 +74,19 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .collect(Collectors.toList());
     }
 
+    /** Chi tiết 1 user (không trả user Deleted). */
     @Override
     public AdminUserDTO getUserById(Integer userId) {
         return toDto(findUser(userId));
     }
 
+    /**
+     * Tạo tài khoản mới:
+     * 1) Validate username/email trùng
+     * 2) Hash password + lưu Users
+     * 3) Gán 1 role vào UserRoles
+     * 4) Tạo profile bảng riêng theo role (trừ ADMIN)
+     */
     @Override
     @Transactional
     public AdminUserDTO createUser(AdminUserCreateRequest request) {
@@ -92,16 +117,22 @@ public class AdminUserServiceImpl implements AdminUserService {
         user.setCreatedAt(now);
         user = userRepository.save(user);
 
+        // Gán role cho user
         UserRole userRole = new UserRole();
         userRole.setUserId(user.getUserId());
         userRole.setRoleId(role.getRoleId());
         userRole.setAssignedAt(now);
         userRoleRepository.save(userRole);
 
+        // Tạo hồ sơ Student/Teacher/Staff/Parent nếu cần
         createProfileIfNeeded(user.getUserId(), roleName, request.getProfileCode(), now);
         return toDto(user);
     }
 
+    /**
+     * Cập nhật thông tin cá nhân / password / role.
+     * Đổi role: xóa hết UserRoles cũ → gán role mới → tạo profile nếu chưa có.
+     */
     @Override
     @Transactional
     public AdminUserDTO updateUser(Integer userId, AdminUserUpdateRequest request) {
@@ -126,10 +157,12 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (request.getAddress() != null) {
             user.setAddress(blankToNull(request.getAddress()));
         }
+        // Chỉ đổi password khi client gửi giá trị mới
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
+        // Đổi role chính (replace toàn bộ roles hiện tại)
         if (request.getRoleName() != null && !request.getRoleName().isBlank()) {
             String roleName = request.getRoleName().trim().toUpperCase(Locale.ROOT);
             Role role = roleRepository.findByRoleNameIgnoreCase(roleName)
@@ -147,16 +180,20 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDto(userRepository.save(user));
     }
 
+    /**
+     * Soft delete: đặt status = Deleted (không xóa cứng để tránh lỗi FK).
+     * User Deleted không còn xuất hiện trong getUsers / getUserById.
+     */
     @Override
     @Transactional
     public void deleteUser(Integer userId) {
         User user = findUser(userId);
-        // Soft delete để tránh lỗi FK với lịch sử học vụ
         user.setStatus(STATUS_DELETED);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
     }
 
+    /** Khóa tài khoản → không đăng nhập được (AuthService chỉ cho phép Active). */
     @Override
     @Transactional
     public AdminUserDTO lockUser(Integer userId) {
@@ -169,6 +206,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDto(userRepository.save(user));
     }
 
+    /** Mở khóa → status Active. */
     @Override
     @Transactional
     public AdminUserDTO unlockUser(Integer userId) {
@@ -181,6 +219,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         return toDto(userRepository.save(user));
     }
 
+    /** Tìm user; coi Deleted như không tồn tại. */
     private User findUser(Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user #" + userId));
@@ -190,6 +229,10 @@ public class AdminUserServiceImpl implements AdminUserService {
         return user;
     }
 
+    /**
+     * Tạo hồ sơ theo role sau khi tạo user.
+     * profileCode: mã SV/TC/ST/PH; để trống thì tự sinh (VD: SV12).
+     */
     private void createProfileIfNeeded(Integer userId, String roleName, String profileCode, LocalDateTime now) {
         String code = (profileCode == null || profileCode.isBlank())
                 ? defaultProfileCode(roleName, userId)
@@ -246,11 +289,12 @@ public class AdminUserServiceImpl implements AdminUserService {
                 }
             }
             default -> {
-                // ADMIN: không cần profile bảng riêng
+                // ADMIN: không có bảng profile riêng
             }
         }
     }
 
+    /** Khi đổi role: nếu chưa có profile tương ứng thì tạo mới. */
     private void ensureProfileExists(Integer userId, String roleName) {
         boolean exists = switch (roleName) {
             case "STUDENT" -> studentRepository.findByUserId(userId).isPresent();
@@ -264,6 +308,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
     }
 
+    /** Mã hồ sơ mặc định: SV{userId}, TC{userId}, ... */
     private String defaultProfileCode(String roleName, Integer userId) {
         String prefix = switch (roleName) {
             case "STUDENT" -> "SV";
@@ -275,6 +320,10 @@ public class AdminUserServiceImpl implements AdminUserService {
         return prefix + userId;
     }
 
+    /**
+     * Map User → AdminUserDTO (kèm danh sách role từ UserRoles).
+     * primaryRole = role đầu tiên trong list.
+     */
     private AdminUserDTO toDto(User user) {
         List<UserRole> userRoles = userRoleRepository.findByUserId(user.getUserId());
         List<String> roles = userRoles.stream()
