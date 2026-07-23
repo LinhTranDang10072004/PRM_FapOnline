@@ -5,11 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2fde402a-7f85-43ff-a4e6-896f7f563457" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/dto/AuthResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/dto/LoginRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/security/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fap_online_backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/fap_online_backend/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fap_online_backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/fap_online_backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fap_online_backend/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/fap_online_backend/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/service/impl/AdminRoleServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/service/impl/AdminRoleServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/service/impl/AdminUserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/fap_online_backend/src/main/java/com/example/demo/service/impl/AdminUserServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../fap_online_ui/lib/features/admin/presentation/screens/admin_dashboard_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/../fap_online_ui/lib/features/admin/presentation/screens/admin_dashboard_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../fap_online_ui/lib/features/admin/presentation/screens/admin_shell_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/../fap_online_ui/lib/features/admin/presentation/screens/admin_shell_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../fap_online_ui/lib/features/staff/presentation/screens/staff_class_detail_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/../fap_online_ui/lib/features/staff/presentation/screens/staff_class_detail_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../fap_online_ui/lib/provider/auth_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/../fap_online_ui/lib/provider/auth_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../fap_online_ui/lib/screens/auth/login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/../fap_online_ui/lib/screens/auth/login_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +37,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "Linh",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/letha/OneDrive/Documents/Ky8/PRMProject/fap_online_backend",

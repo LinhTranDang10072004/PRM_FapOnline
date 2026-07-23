@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../theme/app_colors.dart';
-import '../../../../utils/preferences.dart';
 import '../../data/models/admin_models.dart';
 import '../providers/admin_dashboard_provider.dart';
 import '../widgets/admin_widgets.dart';
@@ -15,20 +14,12 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  String? _displayName;
-
   @override
   void initState() {
     super.initState();
-    _loadName();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AdminDashboardProvider>().load();
     });
-  }
-
-  Future<void> _loadName() async {
-    final name = await PreferencesHelper.getFullName();
-    if (mounted) setState(() => _displayName = name);
   }
 
   @override
@@ -56,7 +47,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 )
               else
-                SliverToBoxAdapter(child: _buildStatGrid(dashboard)),
+                SliverToBoxAdapter(child: _buildStatGrid(provider, dashboard)),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
@@ -92,26 +83,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Xin chào, ${_displayName ?? 'Admin'}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+              child: Center(
+                child: Container(
+                  height: 48,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Tổng quan hệ thống',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                  child: Image.asset(
+                    AppColors.logoAsset,
+                    fit: BoxFit.contain,
                   ),
-                ],
+                ),
               ),
             ),
             Container(
@@ -133,7 +118,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildStatGrid(AdminDashboardModel? d) {
+  Widget _buildStatGrid(AdminDashboardProvider provider, AdminDashboardModel? d) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -148,6 +133,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          _FilterBar(provider: provider),
+          const SizedBox(height: 12),
+          if (provider.isLoading)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: LinearProgressIndicator(
+                color: AppColors.primary,
+                backgroundColor: AppColors.primaryLight,
+                minHeight: 2,
+              ),
+            ),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -188,6 +184,127 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  final AdminDashboardProvider provider;
+
+  const _FilterBar({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _FilterDropdown<String?>(
+              label: 'Năm học',
+              value: provider.selectedAcademicYear,
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Tất cả'),
+                ),
+                ...provider.academicYears.map(
+                  (y) => DropdownMenuItem<String?>(
+                    value: y,
+                    child: Text(y),
+                  ),
+                ),
+              ],
+              onChanged: (v) => provider.setAcademicYear(v),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _FilterDropdown<String?>(
+              label: 'Kỳ',
+              value: provider.selectedTerm,
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Tất cả'),
+                ),
+                ...AdminDashboardProvider.terms.map(
+                  (t) => DropdownMenuItem<String?>(
+                    value: t,
+                    child: Text(t),
+                  ),
+                ),
+              ],
+              onChanged: (v) => provider.setTerm(v),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterDropdown<T> extends StatelessWidget {
+  final String label;
+  final T value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+
+  const _FilterDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              items: items,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

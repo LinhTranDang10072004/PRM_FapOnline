@@ -43,6 +43,23 @@ class ApiEndpoints {
 
   // ── Admin ───────────────────────────────────────────────────────────────
   static const String adminDashboard = '/admin/dashboard';
+  static const String adminDashboardSemesters = '/admin/dashboard/semesters';
+  static const String adminDashboardAcademicYears = '/admin/dashboard/academic-years';
+  static String adminDashboardFiltered({String? academicYear, String? term}) {
+    final params = <String, String>{};
+    if (academicYear != null && academicYear.isNotEmpty) {
+      params['academicYear'] = academicYear;
+    }
+    if (term != null && term.isNotEmpty) {
+      params['term'] = term;
+    }
+    if (params.isEmpty) return adminDashboard;
+    final query = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    return '$adminDashboard?$query';
+  }
   static const String adminUsers = '/admin/users';
   static String adminUserById(int userId) => '/admin/users/$userId';
   static String adminUserLock(int userId) => '/admin/users/$userId/lock';

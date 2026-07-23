@@ -4,6 +4,7 @@ import '../../../../config/app_routes.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_shadows.dart';
+import '../../../../utils/preferences.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_roles_screen.dart';
@@ -73,8 +74,26 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
   }
 }
 
-class _AdminDrawer extends StatelessWidget {
+class _AdminDrawer extends StatefulWidget {
   const _AdminDrawer();
+
+  @override
+  State<_AdminDrawer> createState() => _AdminDrawerState();
+}
+
+class _AdminDrawerState extends State<_AdminDrawer> {
+  String? _displayName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadName();
+  }
+
+  Future<void> _loadName() async {
+    final name = await PreferencesHelper.getFullName();
+    if (mounted) setState(() => _displayName = name);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,29 +112,30 @@ class _AdminDrawer extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white24,
-                  child: Icon(
+                  child: const Icon(
                     Icons.admin_panel_settings_rounded,
                     color: Colors.white,
                     size: 32,
                   ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
-                  'Admin Portal',
-                  style: TextStyle(
+                  'Xin chào, ${_displayName ?? 'Admin'}',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                Text(
-                  'PRM System Overview',
+                const SizedBox(height: 4),
+                const Text(
+                  'Tổng quan hệ thống',
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],

@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -51,7 +52,8 @@ public class DataSeeder implements CommandLineRunner {
         seedApplicationTypesIfEmpty();
 
         if (userRepository.count() > 0) {
-            System.out.println("Database already contains users. Skipping seed.");
+            System.out.println("Database already contains users. Skipping full seed.");
+            ensureSemesterFilterDemoData();
             return;
         }
 
@@ -100,13 +102,24 @@ public class DataSeeder implements CommandLineRunner {
         // TIER 1: Users, Subjects, Semesters
         // ═══════════════════════════════════════════════════════════════════
 
-        // --- Semesters ---
+        // --- Semesters (mỗi năm học có 3 kỳ: Fall, Spring, Summer) ---
+        // AY 2025-2026
+        Semester fall2025 = saveSemester("FA25", "Fall 2025", "2025-2026",
+                LocalDate.of(2025, 9, 1), LocalDate.of(2025, 12, 31), "Completed", now);
         Semester spring2026 = saveSemester("SP26", "Spring 2026", "2025-2026",
                 LocalDate.of(2026, 1, 5), LocalDate.of(2026, 4, 30), "Completed", now);
         Semester summer2026 = saveSemester("SU26", "Summer 2026", "2025-2026",
                 LocalDate.of(2026, 5, 5), LocalDate.of(2026, 8, 31), "Completed", now);
+        // AY 2026-2027
         Semester fall2026 = saveSemester("FA26", "Fall 2026", "2026-2027",
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31), "Active", now);
+        // Status chỉ được phép theo CK_Semesters_Status (vd: Active / Completed)
+        Semester spring2027 = saveSemester("SP27", "Spring 2027", "2026-2027",
+                LocalDate.of(2027, 1, 5), LocalDate.of(2027, 4, 30), "Active", now);
+        Semester summer2027 = saveSemester("SU27", "Summer 2027", "2026-2027",
+                LocalDate.of(2027, 5, 5), LocalDate.of(2027, 8, 31), "Active", now);
+        System.out.println("   Future semesters prepared: "
+                + spring2027.getSemesterCode() + ", " + summer2027.getSemesterCode());
 
         // --- Subjects ---
         Subject prm392 = saveSubject("PRM392", "Mobile Development", 3, "Phát triển ứng dụng di động với Flutter/Android", now);
@@ -449,18 +462,71 @@ public class DataSeeder implements CommandLineRunner {
         saveStudentGrade(student4.getStudentId(), classSWD_A.getClassId(), swd_pt2.getClassGradeComponentId(), new BigDecimal("9.0"), teacher2.getTeacherId(), now);
         saveStudentGrade(student4.getStudentId(), classSWD_A.getClassId(), swd_assign.getClassGradeComponentId(), new BigDecimal("8.0"), teacher2.getTeacherId(), now);
 
-        // --- Final Grades (for Spring 2026 completed semester - PRJ301 as example) ---
-        // Let's create a completed class for Spring 2026
+        // --- Fall 2025 Classes (AY 2025-2026) ---
+        SchoolClass classPRJ_Fall25 = saveClass("PRJ301-FA25", "PRJ301 - Fall 2025", prj301.getSubjectId(),
+                fall2025.getSemesterId(), teacher1.getTeacherId(), 40, now);
+        classPRJ_Fall25.setStatus("Completed");
+        schoolClassRepository.save(classPRJ_Fall25);
+        SchoolClass classSWD_Fall25 = saveClass("SWD392-FA25", "SWD392 - Fall 2025", swd392.getSubjectId(),
+                fall2025.getSemesterId(), teacher2.getTeacherId(), 35, now);
+        classSWD_Fall25.setStatus("Completed");
+        schoolClassRepository.save(classSWD_Fall25);
+        SchoolClass classJPD_Fall25 = saveClass("JPD113-FA25", "JPD113 - Fall 2025", jpd113.getSubjectId(),
+                fall2025.getSemesterId(), teacher3.getTeacherId(), 40, now);
+        classJPD_Fall25.setStatus("Completed");
+        schoolClassRepository.save(classJPD_Fall25);
+
+        // Fall 2025 enrollments: 4 students
+        saveClassStudent(classPRJ_Fall25.getClassId(), student1.getStudentId(), now.minusMonths(10));
+        saveClassStudent(classPRJ_Fall25.getClassId(), student2.getStudentId(), now.minusMonths(10));
+        saveClassStudent(classPRJ_Fall25.getClassId(), student3.getStudentId(), now.minusMonths(10));
+        saveClassStudent(classSWD_Fall25.getClassId(), student1.getStudentId(), now.minusMonths(10));
+        saveClassStudent(classSWD_Fall25.getClassId(), student4.getStudentId(), now.minusMonths(10));
+        saveClassStudent(classJPD_Fall25.getClassId(), student2.getStudentId(), now.minusMonths(10));
+        saveClassStudent(classJPD_Fall25.getClassId(), student4.getStudentId(), now.minusMonths(10));
+
+        // --- Spring 2026 Classes (AY 2025-2026) ---
         SchoolClass classPRM_Spring = saveClass("PRM392-SP", "PRM392 - Spring 2026", prm392.getSubjectId(),
                 spring2026.getSemesterId(), teacher1.getTeacherId(), 35, now);
         classPRM_Spring.setStatus("Completed");
         schoolClassRepository.save(classPRM_Spring);
+        SchoolClass classIOT_Spring = saveClass("IOT102-SP", "IOT102 - Spring 2026", iot102.getSubjectId(),
+                spring2026.getSemesterId(), teacher3.getTeacherId(), 30, now);
+        classIOT_Spring.setStatus("Completed");
+        schoolClassRepository.save(classIOT_Spring);
+        SchoolClass classMLN_Spring = saveClass("MLN131-SP", "MLN131 - Spring 2026", mln131.getSubjectId(),
+                spring2026.getSemesterId(), teacher2.getTeacherId(), 45, now);
+        classMLN_Spring.setStatus("Completed");
+        schoolClassRepository.save(classMLN_Spring);
 
+        // Spring 2026 enrollments: 3 students
         saveClassStudent(classPRM_Spring.getClassId(), student1.getStudentId(), now.minusMonths(6));
         saveClassStudent(classPRM_Spring.getClassId(), student3.getStudentId(), now.minusMonths(6));
+        saveClassStudent(classIOT_Spring.getClassId(), student1.getStudentId(), now.minusMonths(6));
+        saveClassStudent(classIOT_Spring.getClassId(), student5.getStudentId(), now.minusMonths(6));
+        saveClassStudent(classMLN_Spring.getClassId(), student3.getStudentId(), now.minusMonths(6));
+        saveClassStudent(classMLN_Spring.getClassId(), student5.getStudentId(), now.minusMonths(6));
 
         saveFinalGrade(classPRM_Spring.getClassId(), student1.getStudentId(), new BigDecimal("8.2"), "B+", "PASS", now.minusMonths(3), adminUser.getUserId());
         saveFinalGrade(classPRM_Spring.getClassId(), student3.getStudentId(), new BigDecimal("4.8"), "D", "FAIL", now.minusMonths(3), adminUser.getUserId());
+
+        // --- Summer 2026 Classes (AY 2025-2026) ---
+        SchoolClass classSWP_Summer = saveClass("SWP391-SU", "SWP391 - Summer 2026", swp391.getSubjectId(),
+                summer2026.getSemesterId(), teacher2.getTeacherId(), 30, now);
+        classSWP_Summer.setStatus("Completed");
+        schoolClassRepository.save(classSWP_Summer);
+        SchoolClass classPRM_Summer = saveClass("PRM392-SU", "PRM392 - Summer 2026", prm392.getSubjectId(),
+                summer2026.getSemesterId(), teacher1.getTeacherId(), 35, now);
+        classPRM_Summer.setStatus("Completed");
+        schoolClassRepository.save(classPRM_Summer);
+
+        // Summer 2026 enrollments: 2 students
+        saveClassStudent(classSWP_Summer.getClassId(), student2.getStudentId(), now.minusMonths(3));
+        saveClassStudent(classSWP_Summer.getClassId(), student4.getStudentId(), now.minusMonths(3));
+        saveClassStudent(classPRM_Summer.getClassId(), student2.getStudentId(), now.minusMonths(3));
+        saveClassStudent(classPRM_Summer.getClassId(), student5.getStudentId(), now.minusMonths(3));
+
+        // Spring/Summer 2027 chưa mở lớp — dùng để test filter năm 2026-2027
 
         // --- Student Fees ---
         // Fall 2026 tuition
@@ -578,10 +644,10 @@ public class DataSeeder implements CommandLineRunner {
         System.out.println("📋 Seeded Data Summary:");
         System.out.println("   • 13 Users (1 admin, 3 teachers, 1 staff, 3 parents, 5 students)");
         System.out.println("   • 5 Roles with assignments");
-        System.out.println("   • 3 Semesters (Spring, Summer, Fall 2026)");
+        System.out.println("   • 6 Semesters (2 năm × 3 kỳ Fall/Spring/Summer)");
         System.out.println("   • 7 Subjects");
         System.out.println("   • 5 Rooms, 4 Time Slots");
-        System.out.println("   • 8 Classes with student enrollments");
+        System.out.println("   • Classes + enrollments cho Fall/Spring/Summer (đủ filter admin)");
         System.out.println("   • 36+ Schedule entries across 4 weeks");
         System.out.println("   • 56+ Attendance records");
         System.out.println("   • 6 Grade Components, 16 Class Grade Components");
@@ -612,6 +678,140 @@ public class DataSeeder implements CommandLineRunner {
         saveApplicationType("Khiếu nại điểm", "Đơn khiếu nại / phúc khảo điểm");
         saveApplicationType("Khác", "Các loại đơn khác");
         System.out.println("Seeded ApplicationTypes.");
+    }
+
+    /**
+     * Khi DB đã có user (full seed bị skip), vẫn bổ sung học kỳ + lớp demo
+     * để filter Năm học / Kỳ trên Admin Dashboard có dữ liệu.
+     * Ưu tiên tái sử dụng học kỳ đã có (tránh trùng FA26 vs FA2026).
+     */
+    private void ensureSemesterFilterDemoData() {
+        LocalDateTime now = LocalDateTime.now();
+        System.out.println("🔁 Ensuring semester filter demo data...");
+
+        Semester fall2526 = findOrCreateSemester("Fall", "2025-2026", "FA25", "Fall 2025",
+                LocalDate.of(2025, 9, 1), LocalDate.of(2025, 12, 31), "Completed", now);
+        Semester spring2526 = findOrCreateSemester("Spring", "2025-2026", "SP26", "Spring 2026",
+                LocalDate.of(2026, 1, 5), LocalDate.of(2026, 4, 30), "Completed", now);
+        Semester summer2526 = findOrCreateSemester("Summer", "2025-2026", "SU26", "Summer 2026",
+                LocalDate.of(2026, 5, 5), LocalDate.of(2026, 8, 31), "Completed", now);
+        Semester fall2627 = findOrCreateSemester("Fall", "2026-2027", "FA26", "Fall 2026",
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31), "Active", now);
+        findOrCreateSemester("Spring", "2026-2027", "SP27", "Spring 2027",
+                LocalDate.of(2027, 1, 5), LocalDate.of(2027, 4, 30), "Active", now);
+        findOrCreateSemester("Summer", "2026-2027", "SU27", "Summer 2027",
+                LocalDate.of(2027, 5, 5), LocalDate.of(2027, 8, 31), "Active", now);
+
+        List<Student> students = studentRepository.findAll();
+        List<Teacher> teachers = teacherRepository.findAll();
+        List<Subject> subjects = subjectRepository.findAll();
+
+        if (students.size() < 2 || teachers.isEmpty() || subjects.isEmpty()) {
+            System.out.println("⚠ Not enough base data (students/teachers/subjects) to seed filter classes.");
+            System.out.println("   Academic years available: " + semesterRepository.findDistinctAcademicYears());
+            return;
+        }
+
+        Teacher t1 = teachers.get(0);
+        Teacher t2 = teachers.size() > 1 ? teachers.get(1) : t1;
+        Subject sub1 = subjects.get(0);
+        Subject sub2 = subjects.size() > 1 ? subjects.get(1) : sub1;
+        Subject sub3 = subjects.size() > 2 ? subjects.get(2) : sub1;
+        Student s1 = students.get(0);
+        Student s2 = students.get(1);
+        Student s3 = students.size() > 2 ? students.get(2) : s1;
+        Student s4 = students.size() > 3 ? students.get(3) : s2;
+
+        // 2025-2026 Fall — 3 SV
+        seedDemoClass("ADM-FA25-A", "Demo Fall 2025 A", sub1, fall2526, t1, now,
+                List.of(s1, s2, s3), now.minusMonths(10));
+        seedDemoClass("ADM-FA25-B", "Demo Fall 2025 B", sub2, fall2526, t2, now,
+                List.of(s1, s2), now.minusMonths(10));
+
+        // 2025-2026 Spring — 2 SV
+        seedDemoClass("ADM-SP26-A", "Demo Spring 2026 A", sub1, spring2526, t1, now,
+                List.of(s1, s3), now.minusMonths(6));
+        seedDemoClass("ADM-SP26-B", "Demo Spring 2026 B", sub3, spring2526, t2, now,
+                List.of(s3, s4), now.minusMonths(6));
+
+        // 2025-2026 Summer — 3 SV
+        seedDemoClass("ADM-SU26-A", "Demo Summer 2026 A", sub2, summer2526, t1, now,
+                List.of(s2, s4), now.minusMonths(3));
+        seedDemoClass("ADM-SU26-B", "Demo Summer 2026 B", sub1, summer2526, t2, now,
+                List.of(s2, s1, s4), now.minusMonths(3));
+
+        // 2026-2027 Fall — 4 SV (kỳ đang Active)
+        seedDemoClass("ADM-FA26-A", "Demo Fall 2026 A", sub1, fall2627, t1, now,
+                List.of(s1, s2, s3, s4), now.minusDays(20));
+        seedDemoClass("ADM-FA26-B", "Demo Fall 2026 B", sub2, fall2627, t2, now,
+                List.of(s1, s2, s3), now.minusDays(20));
+        seedDemoClass("ADM-FA26-C", "Demo Fall 2026 C", sub3, fall2627, t1, now,
+                List.of(s2, s4), now.minusDays(20));
+
+        System.out.println("✅ Semester filter demo data ready.");
+        System.out.println("   Academic years: " + semesterRepository.findDistinctAcademicYears());
+        System.out.println("   Tip: chọn 2025-2026 (Fall/Spring/Summer) hoặc 2026-2027 + Fall để thấy số liệu.");
+    }
+
+    /** Tìm học kỳ theo năm + kỳ trước; không có mới tạo theo code. */
+    private Semester findOrCreateSemester(String term, String academicYear, String code, String name,
+                                          LocalDate start, LocalDate end, String status, LocalDateTime now) {
+        List<Semester> inYear = semesterRepository.findByAcademicYearOrderByStartDateAsc(academicYear);
+        for (Semester s : inYear) {
+            if (termEquals(s, term)) {
+                return s;
+            }
+        }
+        return semesterRepository.findBySemesterCode(code)
+                .orElseGet(() -> saveSemester(code, name, academicYear, start, end, status, now));
+    }
+
+    private boolean termEquals(Semester s, String term) {
+        String name = s.getSemesterName() != null ? s.getSemesterName().trim().toLowerCase() : "";
+        String code = s.getSemesterCode() != null ? s.getSemesterCode().toUpperCase() : "";
+        String t = term.toLowerCase();
+        if (name.startsWith(t)) return true;
+        return switch (t) {
+            case "fall" -> code.startsWith("FA");
+            case "spring" -> code.startsWith("SP");
+            case "summer" -> code.startsWith("SU");
+            default -> false;
+        };
+    }
+
+    private void seedDemoClass(String code, String name, Subject subject, Semester semester,
+                               Teacher teacher, LocalDateTime now,
+                               List<Student> students, LocalDateTime enrolledAt) {
+        SchoolClass c = ensureOpenOrCompletedClass(code, name, subject.getSubjectId(),
+                semester.getSemesterId(), teacher.getTeacherId(), 40, now,
+                "Completed".equalsIgnoreCase(semester.getStatus()) ? "Completed" : "Open");
+        for (Student st : students) {
+            ensureEnrollment(c.getClassId(), st.getStudentId(), enrolledAt);
+        }
+    }
+
+    private SchoolClass ensureOpenOrCompletedClass(String code, String name, int subjectId, int semesterId,
+                                                   int teacherId, int maxStudents, LocalDateTime now,
+                                                   String status) {
+        return schoolClassRepository.findByClassCode(code)
+                .orElseGet(() -> {
+                    SchoolClass sc = new SchoolClass();
+                    sc.setClassCode(code);
+                    sc.setClassName(name);
+                    sc.setSubjectId(subjectId);
+                    sc.setSemesterId(semesterId);
+                    sc.setMainTeacherId(teacherId);
+                    sc.setMaxStudents(maxStudents);
+                    sc.setStatus(status); // Draft|Open|In Progress|Completed|Cancelled
+                    sc.setCreatedAt(now);
+                    return schoolClassRepository.save(sc);
+                });
+    }
+
+    private void ensureEnrollment(int classId, int studentId, LocalDateTime enrolledAt) {
+        if (!classStudentRepository.existsByClassIdAndStudentId(classId, studentId)) {
+            saveClassStudent(classId, studentId, enrolledAt);
+        }
     }
 
     private void saveApplicationType(String name, String desc) {
@@ -773,7 +973,7 @@ public class DataSeeder implements CommandLineRunner {
         sc.setSemesterId(semesterId);
         sc.setMainTeacherId(teacherId);
         sc.setMaxStudents(maxStudents);
-        sc.setStatus("Active");
+        sc.setStatus("Open");
         sc.setCreatedAt(now);
         return schoolClassRepository.save(sc);
     }
